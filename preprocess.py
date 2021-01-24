@@ -23,6 +23,8 @@ tag_to_name = {
     'Ns': '地名',
 }
 
+ltp = LTP()
+
 
 def file_content_to_dict(f):
     return {
@@ -43,11 +45,12 @@ def read_tsv_file(filename):
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         for row in read_tsv:
             flag, question, content = row
+            print(question)
             if res.get(question) is None:
                 res[question] = FileContent()
-            res[question].add_answer_options(content)
+            res[question].add_answer_options(preprocess(content))
             if flag == '1':
-                res[question].set_right_answer(content)
+                res[question].set_right_answer(preprocess(content))
 
     else:
         raise Exception(filename + " not exists\n")
@@ -61,7 +64,6 @@ def keyword_extraction(file_content):
     :param file_content: FileContent()
     :return:
     """
-    ltp = LTP()
 
     def to_string(array):
         """
@@ -72,13 +74,37 @@ def keyword_extraction(file_content):
 
     # [question, question....]
     for key, value in file_content.items():
+        print(key)
         seg, hidden = ltp.seg([key])
         # ner: [[('Nh', 2, 2)]]
         ner = ltp.ner(hidden)
         # keywords: [('PERSON', "吴轩")],  tuple_item: ('Nh', 2, 2)
         keywords = [(tag_to_name[tuple_item[0]], to_string(seg[0][tuple_item[1]: tuple_item[2]+1])) for tuple_item in ner[0]]
         file_content[key].keywords = keywords
+
     return file_content
+
+
+def preprocess(option):
+    """
+    结合分词技术和命名实体识别， 对候选答案进行预处理
+    :param option: str, 未分词："兼善中学是重庆市的一所中学，位于北碚区毛背沱。"
+    :return: sent: list, 分词之后的数组: ['兼善中学', '是', '重庆市', '的', '一', '所', '中学', '，', '位于', '北碚区毛背沱', '。']
+    """
+
+    seg, hidden = ltp.seg([option])
+    # ['兼善', '中学', '是', '重庆市', '的', '一', '所', '中学', '，', '位于', '北碚区', '毛背沱', '。']
+    sent = seg[0]
+    # ner[0]: [('Ni', 0, 1), ('Ns', 3, 3), ('Ns', 10, 11)]
+    ner = ltp.ner(hidden)
+    for i in range(len(ner[0])-1, -1, -1):
+        _, start, end = ner[0][i]
+        # '北碚区毛背沱' 代替 '北碚区', '毛背沱'
+        sent[start] = ''.join(sent[start:end+1])
+        # 记得pop时也要倒序pop
+        for j in range(end, start, -1):
+            sent.pop(j)
+    return sent
 
 
 if __name__ == "__main__":
