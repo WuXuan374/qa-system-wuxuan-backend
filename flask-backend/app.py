@@ -1,39 +1,49 @@
 #!flask/bin/python
-from flask import Flask, request, abort
+from flask import Flask, request, abort, jsonify
 from flask_cors import CORS
+import json
+import os
+import sys
+sys.path.append("..")
+from run_QA import ReadDocumentContent
 
 app = Flask(__name__)
 CORS(app)
 
-tasks = [
-    {
-        'id': 1,
-        'title': u'Buy groceries',
-        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol',
-        'done': False
-    },
-    {
-        'id': 2,
-        'title': u'Learn Python',
-        'description': u'Need to find a good Python tutorial on the web',
-        'done': False
-    }
-]
+# read file content
+sourcefile = './data/fileContent.json'
+if os.path.isfile(sourcefile):
+    with open(sourcefile, 'r', encoding="utf-8") as load_j:
+        content = json.load(load_j)
+else:
+    raise Exception("source file not exists\n")
 
-answers = {
-    '吴轩': '电子科技大学',
-    '郭谢翔': '福州大学',
-    '余海杰': '福建华侨大学',
+# api configuration
+apis = {
+    "answers": "/api/answers/",
+    "keywords": "/api/keywords",
 }
 
 
-@app.route('/api/answers/', methods=['GET'])
+@app.route(apis["answers"], methods=['GET'])
 def get_answers():
-    question = request.args.get("question")
-    if question is None or len(question) == 0:
+    question_str = request.args.get("question")
+    stop_word_path = './data/stopwords.txt'
+    if question_str is None or len(question_str) == 0:
         abort(404)
     else:
-        return answers[question]
+        reader = ReadDocumentContent(sourcefile)
+        answers = reader.get_question_answer(question_str, stop_word_path)
+        return jsonify({'answers': answers})
+
+
+@app.route(apis["keywords"], methods=['GET'])
+def get_keywords():
+    keywords = []
+    for question in content.keys():
+        for tag, keyword in content[question]["keywords"]:
+            keywords.append((tag, keyword))
+    return jsonify({'keywords': keywords})
 
 
 if __name__ == '__main__':
