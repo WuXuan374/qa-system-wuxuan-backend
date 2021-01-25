@@ -84,7 +84,6 @@ class RetrievalTFIDF:
             self.optionsInfo[index]["tfIdf"] = {}
             for word in self.optionsInfo[index]['wf'].keys():
                 self.optionsInfo[index]["tfIdf"][word] = self.optionsInfo[index]['wf'][word] * self.idf[word]
-        print(self.optionsInfo[0])
 
     # def vector_distance(self, vector):
     #     """
@@ -151,6 +150,8 @@ class RetrievalTFIDF:
         """
         answers = self.get_similar_option(query_vector)
         possible_answers = []
+        if answers == [None]:
+            return possible_answers
         for index, sim in answers:
             # possible_answers.append(("".join(self.options[index]), sim))
             possible_answers.append({"answer": "".join(self.options[index]), "score": sim})

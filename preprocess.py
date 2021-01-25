@@ -34,6 +34,14 @@ def file_content_to_dict(f):
     }
 
 
+def to_string(array):
+    """
+    :param array: ['复旦', '大学']
+    :return: '复旦大学'
+    """
+    return ''.join(array)
+
+
 def read_tsv_file(filename):
     """
     :param filename: string
@@ -65,16 +73,8 @@ def keyword_extraction(file_content):
     :return:
     """
 
-    def to_string(array):
-        """
-        :param array: ['复旦', '大学']
-        :return: '复旦大学'
-        """
-        return ''.join(array)
-
     # [question, question....]
     for key, value in file_content.items():
-        print(key)
         seg, hidden = ltp.seg([key])
         # ner: [[('Nh', 2, 2)]]
         ner = ltp.ner(hidden)
@@ -83,6 +83,21 @@ def keyword_extraction(file_content):
         file_content[key].keywords = keywords
 
     return file_content
+
+
+def get_keyword(question_str):
+    """
+    input a question string, extract its keyword using named-entity recognition
+    :param question_str: str, e.g. "布里斯本商学研究所的排名如何？"
+    :return: keywords: list, e.g. ["布里斯本", "商学研究所"]
+    """
+    seg, hidden = ltp.seg([question_str])
+    # ner: [[('Nh', 2, 2)]]
+    ner = ltp.ner(hidden)
+    # keywords: [('PERSON', "吴轩")],  tuple_item: ('Nh', 2, 2)
+    keywords = [to_string(seg[0][tuple_item[1]: tuple_item[2] + 1]) for tuple_item in
+                ner[0]]
+    return keywords
 
 
 def preprocess(option):
@@ -108,10 +123,12 @@ def preprocess(option):
 
 
 if __name__ == "__main__":
-    res = read_tsv_file('./data/ChineseDBQA/nlpcc2017.dbqa.train')
-    file_content = keyword_extraction(res)
-    with open('./data/output/fileContent.json', 'w', encoding="utf-8") as fp:
-        json.dump(file_content, fp, indent=4, ensure_ascii=False, default=file_content_to_dict)
+    # res = read_tsv_file('./data/ChineseDBQA/nlpcc2017.dbqa.train')
+    # file_content = keyword_extraction(res)
+    # with open('./data/output/fileContent.json', 'w', encoding="utf-8") as fp:
+    #     json.dump(file_content, fp, indent=4, ensure_ascii=False, default=file_content_to_dict)
+    keywords = get_keyword("新北市私立辞修高级中学学校名称的由来是什么？")
+    print(keywords)
 
 
 

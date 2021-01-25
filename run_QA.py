@@ -10,14 +10,15 @@ class ReadDocumentContent:
         with open(source_file, 'r', encoding="utf-8") as load_j:
             self.content = json.load(load_j)
 
-    def get_question_answer(self, question_str, stop_word_path):
+    def get_question_answer(self, question_str, answer_options, stop_word_path):
         """
         input a question string, and get top possible answers
         :param question_str: string, e.g. "重庆大学建筑学部坐落在哪里？"
+        :param answer_options: list of list, e.g. [ [ "2010年","，","世宗大学",]]
         :param stop_word_path: path, e.g. "./data/stopwords.txt"
         :return: possible_answers: list of tuple, [(answer(str), similarity(number)] [("76个本科专业", 0.1555555)]
         """
-        tfidf = RetrievalTFIDF(self.content[question_str]["options"])
+        tfidf = RetrievalTFIDF(answer_options)
         question = ProcessQuestion(question_str, stop_word_path)
         possible_answers = tfidf.query(question.question_vector)
         return possible_answers
@@ -26,5 +27,5 @@ class ReadDocumentContent:
 if __name__ == "__main__":
     sourcefile = './data/output/fileContent.json'
     reader = ReadDocumentContent(sourcefile)
-    answers = reader.get_question_answer("重庆大学建筑学部坐落在哪里？")
+    answers = reader.get_question_answer("重庆大学建筑学部坐落在哪里？", stop_word_path="./data/stopwords.txt")
     print(answers)
