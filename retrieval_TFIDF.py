@@ -137,6 +137,7 @@ class RetrievalTFIDF:
         if query_distance == 0:
             return [None]
         top_options = []
+        # 如果有选项similarity == 0, 是否就不用返回top3了？
         for index in range(0, len(self.options)):
             similarity = self.compute_similarity(self.optionsInfo[index], query_vector, query_distance)
             top_options.append((index, similarity))

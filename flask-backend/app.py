@@ -26,19 +26,28 @@ apis = {
 }
 
 
-def get_title_by_keywords(keywords):
+def get_titles_by_keywords(keywords):
     """
     用户输入问题A --> 提取问题A中的关键词 --> 通过关键词查找匹配方式，寻找语料库中相似的问题B --> 返回B的title
+    语料库中相似的问题可能不止一条，所以可以返回多个相似问题
     :param keywords: list
-    :return: question: string
+    :return: question: list, ["南京大学化学化工学院改过哪些名字？", "南京大学小百合BBS是哪年创立？", ]
     """
+    questions = []
     if not keywords:
-        return None
+        return questions
     for question in content.keys():
         for keywordInfo in (content[question]["keywords"]):
-            if keywords[0] == keywordInfo[1]:
-                return question
-    return None
+            for query_keyword in keywords:
+                # 关键词完全匹配 or 用户关键词是文档关键词的子集
+                # e.g. 用户关键词：“北京大学”  文档关键词： “北京大学药学院”
+                if query_keyword == keywordInfo[1] \
+                        or keywordInfo[1].find(query_keyword) != -1:
+                    # 通过上述关键词匹配，获得文本库中所有相关文本的标题(question)
+                    questions.append(question)
+                    # 有一个关键词匹配，就可以跳过当前循环，去查找下一个文本
+                    break
+    return questions
 
 
 @app.route(apis["answers"], methods=['GET'])
@@ -53,16 +62,26 @@ def get_answers():
     question_str = request.args.get("question")
     stop_word_path = './data/stopwords.txt'
     if question_str is None or len(question_str) == 0:
-        make_response(jsonify({'error': 'Not found'}), 404)
+        return make_response(jsonify({'error': 'Not found'}), 404)
     else:
         reader = ReadDocumentContent(sourcefile)
         keywords = get_keyword(question_str)
-        question_title = get_title_by_keywords(keywords)
-        if question_title is None:
+        # question_titles: list
+        question_titles = get_titles_by_keywords(keywords)
+        # sorted_answers: [answer, score, document_title]
+        sorted_answers = []
+        if not question_titles:
             return make_response(jsonify({'error': 'Not found'}), 404)
-        answers = reader.get_question_answer(
-            question_str, content[question_title]["options"], stop_word_path)
-        return jsonify({'answers': answers})
+        # 根据title, 在title对应的文本中查找答案
+        for title in question_titles:
+            current_answer = reader.get_question_answer\
+                (question_str, content[title]["options"], stop_word_path)
+            for item in current_answer:
+                item["document_title"] = title
+                sorted_answers.append(item)
+        # 从多个文本中，每个文本收集三个答案，随后对收集到的所有答案再根据score进行排序
+        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3]
+        return jsonify({'answers': sorted_answers})
 
 
 @app.route(apis["keywords"], methods=['GET'])
@@ -73,7 +92,9 @@ def get_keywords():
     keywords = []
     for question in content.keys():
         for tag, keyword in content[question]["keywords"]:
-            keywords.append((tag, keyword))
+            # 去重
+            if (tag, keyword) not in keywords:
+                keywords.append((tag, keyword))
     return jsonify({'keywords': keywords})
 
 
