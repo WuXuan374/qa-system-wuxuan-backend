@@ -3,8 +3,7 @@ import os
 
 
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, remove_stopword=True):
-        self.remove_stopword = remove_stopword
+    def __init__(self, question, stop_word_path, ngram=1):
         if os.path.isfile(stop_word_path):
             fp = open(stop_word_path, 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
@@ -12,7 +11,9 @@ class ProcessQuestion:
             raise Exception("stop words file not exists!\n")
         self.question = question
         self.tokenized_question = self.tokenize(question)
-        self.question_vector = self.get_vector(self.tokenized_question)
+        # 去除停止词，生成ngram
+        self.ngram_question = self.get_ngram(self.tokenized_question, ngram=ngram)
+        self.question_vector = self.get_vector(self.ngram_question)
 
     def tokenize(self, question):
         """
@@ -43,10 +44,25 @@ class ProcessQuestion:
         """
         word_frequency = {}
         for word in tokenized_question:
-            if self.remove_stopword and word in self.stopwords:
+            if word in self.stopwords:
                 continue
             if word in word_frequency.keys():
                 word_frequency[word] += 1
             else:
                 word_frequency[word] = 1
         return word_frequency
+
+    def get_ngram(self, tokenized_question, ngram):
+        """
+        输入已经分完词的question, 去除停止词后，输出该question的nGram形式
+        :param tokenized_question: ['北京科技大学', '，', '简称', '北科', '或',]
+        :param ngram: num
+        :return: ngram_list: ['北京科技大学','北京科技大学简称','北京科技大学简称北科']
+        """
+        tokenized_question = [word for word in tokenized_question if word not in self.stopwords]
+        question_len = len(tokenized_question)
+        if question_len < ngram:
+            return tokenized_question
+        ngram_list = ["".join(tokenized_question[index: index+k])
+                      for k in range(1, ngram + 1) for index in range(0, question_len - ngram + 1)]
+        return ngram_list

@@ -1,11 +1,11 @@
 import os
 import json
-from ltp import LTP
 import math
+from process_question import ProcessQuestion
 
 
 class RetrievalTFIDF:
-    def __init__(self, options, remove_stopword=True):
+    def __init__(self, options, ngram=1):
         self.idf = {}  # dict
         self.optionsInfo = {}
         self.options = options
@@ -14,29 +14,8 @@ class RetrievalTFIDF:
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
         else:
             raise Exception("stop words file not exists!\n")
-        self.remove_stopword = remove_stopword
+        self.ngram_options = list(map(lambda option: self.get_ngram(option, ngram=ngram), self.options))
         self.computeTFIDF()
-
-    def preprocess(self, option):
-        """
-        结合分词技术和命名实体识别， 对候选答案进行预处理
-        :param option: str, 未分词："兼善中学是重庆市的一所中学，位于北碚区毛背沱。"
-        :return: sent: list, 分词之后的数组: ['兼善中学', '是', '重庆市', '的', '一', '所', '中学', '，', '位于', '北碚区毛背沱', '。']
-        """
-        ltp = LTP()
-        seg, hidden = ltp.seg([option])
-        # ['兼善', '中学', '是', '重庆市', '的', '一', '所', '中学', '，', '位于', '北碚区', '毛背沱', '。']
-        sent = seg[0]
-        # ner[0]: [('Ni', 0, 1), ('Ns', 3, 3), ('Ns', 10, 11)]
-        ner = ltp.ner(hidden)
-        for i in range(len(ner[0])-1, -1, -1):
-            _, start, end = ner[0][i]
-            # '北碚区毛背沱' 代替 '北碚区', '毛背沱'
-            sent[start] = ''.join(sent[start:end+1])
-            # 记得pop时也要倒序pop
-            for j in range(end, start, -1):
-                sent.pop(j)
-        return sent
 
     def getTFCount(self, option):
         """
@@ -47,7 +26,7 @@ class RetrievalTFIDF:
         """
         word_frequency = {}
         for word in option:
-            if self.remove_stopword and word in self.stopwords:
+            if word in self.stopwords:
                 continue
             if word in word_frequency.keys():
                 word_frequency[word] += 1
@@ -59,13 +38,14 @@ class RetrievalTFIDF:
         """
         计算各option的单词在语料库中的Inverse Document Frequency(IDF)
         这里的语料库指的是该问题对应的所有候选答案
+        Update 01/27: 输入的选项改为取了ngram之后的ngram_options,对ngram_options进行TFIDF统计
         :return: optionsInfo：dict
         """
-        options_num = len(self.options)
+        options_num = len(self.ngram_options)
         # 遍历该问题对应的所有选项
         for index in range(options_num):
             # 计算得到每个选项对应的TF值
-            word_frequency = self.getTFCount(self.options[index])
+            word_frequency = self.getTFCount(self.ngram_options[index])
             self.optionsInfo[index] = {}
             self.optionsInfo[index]['wf'] = word_frequency
         # 一个单词在多少选项中出现
@@ -138,10 +118,25 @@ class RetrievalTFIDF:
             return [None]
         top_options = []
         # 如果有选项similarity == 0, 是否就不用返回top3了？
-        for index in range(0, len(self.options)):
+        for index in range(0, len(self.ngram_options)):
             similarity = self.compute_similarity(self.optionsInfo[index], query_vector, query_distance)
             top_options.append((index, similarity))
         return sorted(top_options, key=lambda x: x[1], reverse=True)[:3]
+
+    def get_ngram(self, sent, ngram):
+        """
+        输入已经分完词的option, 去除停止词后，输出该option的nGram形式
+        :param sent: ['北京科技大学', '，', '简称', '北科', '或',]
+        :param ngram: ['北京科技大学','北京科技大学简称','北京科技大学简称北科']
+        :return:
+        """
+        sent = [word for word in sent if word not in self.stopwords]
+        sent_len = len(sent)
+        if sent_len < ngram:
+            return sent
+        ngram_list = ["".join(sent[index: index+k])
+                      for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
+        return ngram_list
 
     def query(self, query_vector):
         """
@@ -163,8 +158,10 @@ if __name__ == "__main__":
     sourcefile = './data/output/fileContent.json'
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
-    tfidf = RetrievalTFIDF(content["北京科技大学图书馆藏书量是多少?"]["options"], remove_stopword=True)
-    wf = tfidf.getTFCount(tfidf.options[0])
-    tfidf.computeTFIDF()
-    tfidf.query({"北京科技大学": 1, "图书馆": 1, "藏书量": 1, "是": 1, "多少": 1})
+    tfidf = RetrievalTFIDF(content["浙江大学地球科学系有多少专业人员？"]["options"], ngram=1)
+    question = ProcessQuestion("浙江大学地球科学系有多少专业人员？", "./data/stopwords.txt", ngram=1)
+    possible_answers = tfidf.query(question.question_vector)
+    print(possible_answers)
+
+
 

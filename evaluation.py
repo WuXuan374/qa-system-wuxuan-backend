@@ -1,17 +1,16 @@
 import json
 import os
 from run_QA import ReadDocumentContent
-from process_question import ProcessQuestion
 
 
 class Evaluation:
-    def __init__(self, source_file):
+    def __init__(self, source_file, ngram=1):
         self.source_file = source_file
         if not os.path.isfile(source_file):
             raise Exception("Source file not exists")
         self.reader = ReadDocumentContent(self.source_file)
         self.content = self.reader.content
-
+        self.ngram = ngram
 
     def compute_metrics(self):
         """
@@ -26,7 +25,7 @@ class Evaluation:
         for question_str in self.content.keys():
             right_answer = self.content[question_str]["right answer"]
             predicted_answers = self.reader.get_question_answer(
-                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt")
+                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt", ngram=self.ngram)
             if not predicted_answers:
                 continue
             for index in range(len(predicted_answers)):
@@ -43,13 +42,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/output/fileContent.json")
+    evaluation = Evaluation("./data/output/fileContent.json", ngram=2)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******First version evaluation")
+    print("*******Second version evaluation(ngram=2)")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "first_version": {
+        "second_version(ngram=2)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }
