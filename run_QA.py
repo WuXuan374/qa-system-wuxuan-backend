@@ -21,12 +21,14 @@ class ReadDocumentContent:
         """
         tfidf = RetrievalTFIDF(answer_options, ngram=self.ngram)
         question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram)
-        possible_answers = tfidf.query(question.question_vector)
+        possible_answers = tfidf.query(question.question_vector, question.answer_type)
         return possible_answers
 
 
 if __name__ == "__main__":
     sourcefile = './data/output/fileContent.json'
     reader = ReadDocumentContent(sourcefile, ngram=2)
-    answers = reader.get_question_answer("重庆大学建筑学部坐落在哪里？", stop_word_path="./data/stopwords.txt")
+    answers = reader.get_question_answer("大分短期大学在什么地方？",
+                                         reader.content["大分短期大学在什么地方？"]["options"],
+                                         stop_word_path="./data/stopwords.txt")
     print(answers)

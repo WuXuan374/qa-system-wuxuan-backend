@@ -64,10 +64,11 @@ def get_answers():
     if question_str is None or len(question_str) == 0:
         return make_response(jsonify({'error': 'Not found'}), 404)
     else:
-        reader = ReadDocumentContent(sourcefile, ngram=1)
-        keywords = get_keyword(question_str)
-        # question_titles: list
-        question_titles = get_titles_by_keywords(keywords)
+        reader = ReadDocumentContent(sourcefile, ngram=2)
+        # keywords = get_keyword(question_str)
+        # # question_titles: list
+        # question_titles = get_titles_by_keywords(keywords)
+        question_titles = [question_str]
         # sorted_answers: [answer, score, document_title]
         sorted_answers = []
         if not question_titles:

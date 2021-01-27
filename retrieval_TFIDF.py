@@ -2,6 +2,8 @@ import os
 import json
 import math
 from process_question import ProcessQuestion
+from ltp import LTP
+ltp = LTP()
 
 
 class RetrievalTFIDF:
@@ -137,10 +139,25 @@ class RetrievalTFIDF:
                       for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
         return ngram_list
 
-    def query(self, query_vector):
+    def get_named_entity(self, question_str):
+        """
+        从候选答案中识别命名实体
+        :param question_str: str, e.g. "学校位于北京“
+        :return: named_entities: list, e.g. ['Nh', "吴轩"]
+        """
+        seg, hidden = ltp.seg([question_str])
+        # ner: [[('Nh', 2, 2)]]
+        ner = ltp.ner(hidden)
+        # keywords: [('PERSON', "吴轩")],  tuple_item: ('Nh', 2, 2)
+        named_entities = [(tuple_item[0], "".join(seg[0][tuple_item[1]: tuple_item[2] + 1]))
+                          for tuple_item in ner[0]]
+        return named_entities
+
+    def query(self, query_vector, answer_types):
         """
         input a question vector, return top3 relevant answers
         :param query_vector: dict, {word: frequency}
+        :param answer_types: list, e.g. ["人物","地点"]
         :return: possible_answers: list of object,  [{"answer": 76个本科专业", "score":0.1555555}]
         """
         answers = self.get_similar_option(query_vector)
@@ -149,7 +166,21 @@ class RetrievalTFIDF:
             return possible_answers
         for index, sim in answers:
             # possible_answers.append(("".join(self.options[index]), sim))
-            possible_answers.append({"answer": "".join(self.options[index]), "score": sim})
+            concrete_answer = ""
+            answer_str = "".join(self.options[index])
+            named_entities = self.get_named_entity(answer_str)
+            for type in answer_types:
+                if type == "人物":
+                    for entity in named_entities:
+                        if entity[0] == "Nh":
+                            concrete_answer = entity[1]
+                            break
+                elif type == "地点":
+                    for entity in named_entities:
+                        if entity[0] == "Ns":
+                            concrete_answer = entity[1]
+                            break
+            possible_answers.append({"answer": answer_str, "score": sim, "concrete_answer": concrete_answer})
         return possible_answers
 
 
@@ -157,9 +188,9 @@ if __name__ == "__main__":
     sourcefile = './data/output/fileContent.json'
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
-    tfidf = RetrievalTFIDF(content["浙江大学地球科学系有多少专业人员？"]["options"], ngram=1)
-    question = ProcessQuestion("浙江大学地球科学系有多少专业人员？", "./data/stopwords.txt", ngram=1)
-    possible_answers = tfidf.query(question.question_vector)
+    tfidf = RetrievalTFIDF(content["范德堡大学是由谁捐款创办的？"]["options"], ngram=1)
+    question = ProcessQuestion("范德堡大学是由谁捐款创办的？", "./data/stopwords.txt", ngram=1)
+    possible_answers = tfidf.query(question.question_vector, question.answer_type)
     print(possible_answers)
 
 
