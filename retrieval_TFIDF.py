@@ -64,7 +64,6 @@ class RetrievalTFIDF:
             self.optionsInfo[index]["tfIdf"] = {}
             for word in self.optionsInfo[index]['wf'].keys():
                 self.optionsInfo[index]["tfIdf"][word] = self.optionsInfo[index]['wf'][word] * self.idf[word]
-
     # def vector_distance(self, vector):
     #     """
     #     compute vector distance

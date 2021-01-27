@@ -10,3 +10,8 @@
 - 使用说明
     * run_QA: 调用ReadDocumentContent构造函数时，给出ngram参数（默认为1）
     * Evaluation： 调用Evaluation构造函数时，给出ngram参数（默认为1）
+
+### 实验结论
+- 实验数据见/data/output/evaluation.json
+- 采用ngram的效果反而不如ngram=1的普通TFIDF算法
+- 思路：是否与停止词有关
