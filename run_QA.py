@@ -21,7 +21,7 @@ class ReadDocumentContent:
         """
         tfidf = RetrievalTFIDF(answer_options, ngram=self.ngram)
         question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram)
-        possible_answers = tfidf.query(question.question_vector, question.answer_type)
+        possible_answers = tfidf.query(question.question_vector, question.answer_types)
         return possible_answers
 
 

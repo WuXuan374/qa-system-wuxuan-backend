@@ -2,6 +2,7 @@ import os
 import json
 import math
 from process_question import ProcessQuestion
+from extractor import extract_date
 from ltp import LTP
 ltp = LTP()
 
@@ -153,6 +154,42 @@ class RetrievalTFIDF:
                           for tuple_item in ner[0]]
         return named_entities
 
+    def get_concrete_by_answer_type(self, named_entities, answer_types, answer_str):
+        """
+        利用之前标注好的预期答案类型，从options中抽取更加精确的答案
+        :param named_entities: list, e.g. [ "Nh", "吴轩"]
+        :param answer_types: list, e.g. ["PERSON", "LOCATION"]
+        :param answer_str: string
+        :return: concrete_answers: list
+        """
+        concrete_answers = []
+        if not answer_types:
+            return concrete_answers
+        for type in answer_types:
+            # 以下三类：直接通过命名实体识别技术，找到相应命名实体
+            if type == "PERSON":
+                for entity in named_entities:
+                    if entity[0] == 'Nh':
+                        concrete_answers.append(entity[1])
+                        break
+            elif type == "LOCATION":
+                for entity in named_entities:
+                    if entity[0] == 'Ns':
+                        concrete_answers.append(entity[1])
+                        break
+            elif type == "ORGANIZATION":
+                for entity in named_entities:
+                    if entity[0] == 'Ni':
+                        concrete_answers.append(entity[1])
+                        break
+            elif type == "DATE":
+                dates = extract_date(answer_str)
+                if dates:
+                    concrete_answers.append(",".join(dates))
+                break
+
+        return concrete_answers
+
     def query(self, query_vector, answer_types):
         """
         input a question vector, return top3 relevant answers
@@ -166,21 +203,12 @@ class RetrievalTFIDF:
             return possible_answers
         for index, sim in answers:
             # possible_answers.append(("".join(self.options[index]), sim))
-            concrete_answer = ""
             answer_str = "".join(self.options[index])
             named_entities = self.get_named_entity(answer_str)
-            for type in answer_types:
-                if type == "人物":
-                    for entity in named_entities:
-                        if entity[0] == "Nh":
-                            concrete_answer = entity[1]
-                            break
-                elif type == "地点":
-                    for entity in named_entities:
-                        if entity[0] == "Ns":
-                            concrete_answer = entity[1]
-                            break
-            possible_answers.append({"answer": answer_str, "score": sim, "concrete_answer": concrete_answer})
+            concrete_answers = self.get_concrete_by_answer_type(named_entities, answer_types, answer_str)
+            if concrete_answers:
+                print({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
+            possible_answers.append({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
         return possible_answers
 
 
@@ -188,10 +216,14 @@ if __name__ == "__main__":
     sourcefile = './data/output/fileContent.json'
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
-    tfidf = RetrievalTFIDF(content["范德堡大学是由谁捐款创办的？"]["options"], ngram=1)
-    question = ProcessQuestion("范德堡大学是由谁捐款创办的？", "./data/stopwords.txt", ngram=1)
-    possible_answers = tfidf.query(question.question_vector, question.answer_type)
-    print(possible_answers)
+    for question_str in content.keys():
+        question = ProcessQuestion(question_str, "./data/stopwords.txt", ngram=1)
+        tfidf = RetrievalTFIDF(content[question_str]["options"], ngram=1)
+        possible_answers = tfidf.query(question.question_vector, question.answer_types)
+    # tfidf = RetrievalTFIDF(content["范德堡大学是由谁捐款创办的？"]["options"], ngram=1)
+    # question = ProcessQuestion("范德堡大学是由谁捐款创办的？", "./data/stopwords.txt", ngram=1)
+    # possible_answers = tfidf.query(question.question_vector, question.answer_type)
+    # print(possible_answers)
 
 
 

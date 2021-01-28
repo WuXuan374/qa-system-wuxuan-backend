@@ -18,8 +18,7 @@ class ProcessQuestion:
         self.ngram_question = self.get_ngram(self.tokenized_question, ngram=ngram)
         # self.answer_type = self.determine_answer_type()
         self.question_vector = self.get_vector(self.ngram_question)
-        self.answer_type = self.determine_answer_type()
-
+        self.answer_types = self.determine_answer_type()
 
     def tokenize(self, question):
         """
@@ -78,20 +77,32 @@ class ProcessQuestion:
     def determine_answer_type(self):
         """
         根据一些人为设定的规则，判断问句所对应的回答类型
-        :return: answer_type: list, e.g. ["人物", "地点”]
+        :return: answer_type: list, e.g. ["PERSON", "LOCATION”]
         """
         answer_type = []
         for token in self.ngram_question:
-            if "谁" in token or "何人" in token:
-                answer_type.append("人物")
+            # 这里通过人为设定规则，判断疑问词和答案类型的关系
+            # 进一步改进可以通过词性标注 --> 找出疑问代词 --> 确定具体类型
+            if "是否" in token or "是不是" in token:
+                answer_type.append("YESNO")
+            elif "谁" in token or "何人" in token:
+                answer_type.append("PERSON")
             elif "哪里" in token or "何处" in token or "什么地方" in token or "在哪儿" in token or "在哪里" in token:
-                answer_type.append("地点")
+                answer_type.append("LOCATION")
             elif "何时" in token or "什么时候" in token:
-                answer_type.append("日期")
+                answer_type.append("DATE")
             elif "多少" in token:
-                answer_type.append("数量")
+                answer_type.append("QUANTITY")  # 后面再考虑如何处理
             elif "多久" in token or "多长" in token or "多远" in token:
-                answer_type.append("线性度量")
+                answer_type.append("LINEAR MEASURE")   # 后面再考虑如何处理
+            elif "什么" in token:
+                for token in self.ngram_question:
+                    if token in ["城市", "国家", "地方"]:
+                        answer_type.append("LOCATION")
+                        break
+                    elif token in ["公司", "机构", "组织"]:
+                        answer_type.append("ORGANIZATION")
+                        break
         # 去重
         answer_type = list(set(answer_type))
         return answer_type
@@ -102,4 +113,4 @@ if __name__ == "__main__":
         content = json.load(load_j)
     for question_str in content.keys():
         question = ProcessQuestion(question_str, './data/stopwords.txt', ngram=2)
-        question.determine_answer_type()
+        answer_types = question.determine_answer_type()
