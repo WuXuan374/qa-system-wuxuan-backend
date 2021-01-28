@@ -1,17 +1,15 @@
 # qa-system-wuxuan-backend
-## version 2 Date 2021/01/26
-### 与version 1 的主要区别
-- sentence retrieval 中采用 ngram similarity
+## version 3 
+### 与version 2 的主要区别
+- 只是对停止词进行了修改，因为发现之前的停止词对bigram，trigram影响较大
+### 实验结论
+- 再次进行了测试，发现bigram，trigram的表现好了很多
 
-### 功能和使用说明
-- 在问题和文本的分词过程中，支持ngram
-    * 例如ngram=1, 分词结果都是单个单词["吴轩"]
-    * ngram=2, 分词结果中会包含二元词组["吴轩作品"]
-- 使用说明
-    * run_QA: 调用ReadDocumentContent构造函数时，给出ngram参数（默认为1）
-    * Evaluation： 调用Evaluation构造函数时，给出ngram参数（默认为1）
+## version 4
+### 与version 3 的主要区别
+- 基于IRQA中提出的一些语义技巧，对部分问题所期待的答案类型进行了标注
+- 在检索答案时，首先根据标注的答案类型对候选答案进行预处理
+- 在选中答案之后，根据标注的答案类型来提取更加准确的答案（人名、时间、地名等）
 
 ### 实验结论
-- 实验数据见/data/output/evaluation.json
-- 采用ngram的效果反而不如ngram=1的普通TFIDF算法
-- 思路：是否与停止词有关
+- 现实很残忍，还不如version 3......

@@ -81,7 +81,8 @@ def get_answers():
                 item["document_title"] = title
                 sorted_answers.append(item)
         # 从多个文本中，每个文本收集三个答案，随后对收集到的所有答案再根据score进行排序
-        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3]
+        length = len(sorted_answers)
+        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3 if length >= 3 else length]
         return jsonify({'answers': sorted_answers})
 
 

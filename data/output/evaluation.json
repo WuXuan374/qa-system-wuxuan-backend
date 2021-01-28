@@ -22,5 +22,13 @@
   "third_version(modify stopword & ngram=3)": {
     "MRR": 0.37125748502994144,
     "accuracy:": 0.5074850299401198
+  },
+  "fourth version(filtered by answer type)(ngram=1)": {
+    "MRR": 0.40182135728543006,
+    "accuracy:": 0.5280688622754491
+  },
+  "fourth version(filtered by answer type)(ngram=2)": {
+    "MRR": 0.35822105788423203,
+    "accuracy:": 0.4539670658682635
   }
 }

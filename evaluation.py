@@ -45,11 +45,11 @@ class Evaluation:
 if __name__ == "__main__":
     evaluation = Evaluation("./data/output/fileContent.json", ngram=3)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******Third version(modify stop word) evaluation(ngram=3)")
+    print("*******fourth version(filtered by answer type) evaluation(ngram=3)")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "third_version(ngram=3)": {
+        "fourth version(filtered by answer type)(ngram=3)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

@@ -19,9 +19,9 @@ class ReadDocumentContent:
         :param stop_word_path: path, e.g. "./data/stopwords.txt"
         :return: possible_answers: list of tuple, [(answer(str), similarity(number)] [("76个本科专业", 0.1555555)]
         """
-        tfidf = RetrievalTFIDF(answer_options, ngram=self.ngram)
         question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram)
-        possible_answers = tfidf.query(question.question_vector, question.answer_types)
+        tfidf = RetrievalTFIDF(answer_options, question.answer_types, ngram=self.ngram)
+        possible_answers = tfidf.query(question.question_vector)
         return possible_answers
 
 
