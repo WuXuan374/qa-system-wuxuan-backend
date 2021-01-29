@@ -6,3 +6,7 @@
 ```
 ### 前端界面展示（半成品）
 ![前端界面展示](./frontend1.jpg)
+
+### 系统效果
+- 测试结果见/data/output/evaluation.json
+- 测试指标： Accuracy, MRR
