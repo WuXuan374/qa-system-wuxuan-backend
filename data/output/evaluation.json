@@ -30,5 +30,9 @@
   "fourth version(filtered by answer type)(ngram=2)": {
     "MRR": 0.35822105788423203,
     "accuracy:": 0.4539670658682635
+  },
+  "fourth version(filtered by answer type)(ngram=3)": {
+    "MRR": 0.3218562874251502,
+    "accuracy:": 0.406437125748503
   }
 }

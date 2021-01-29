@@ -14,9 +14,7 @@ class RetrievalTFIDF:
         # 答案的预期类型，根据问题得到的
         self.answer_types = answer_types
         # 首先根据问句类型，对候选答案进行一次筛选
-        print(len(options))
         self.options = list(filter(lambda option: self.filter_options_by_answer_type(self.answer_types, option), options))
-        print(len(self.options))
         if os.path.isfile('./data/stopwords.txt'):
             fp = open('./data/stopwords.txt', 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
