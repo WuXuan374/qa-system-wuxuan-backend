@@ -1,6 +1,8 @@
-from retrieval_TFIDF import RetrievalTFIDF
+# from retrieval_TFIDF import RetrievalTFIDF
 from process_question import ProcessQuestion
+from retrieval_word_embeddings import RetrievalWordEmbedding
 import json
+import gensim
 
 
 # 创建这个类的目的：提前完成json文件的读取，不需要针对每个问题去读取一次文件
@@ -10,6 +12,11 @@ class ReadDocumentContent:
         with open(source_file, 'r', encoding="utf-8") as load_j:
             self.content = json.load(load_j)
         self.ngram = ngram
+        self.embedding_file = "./data/word2vec/word2vec-300.iter5"
+        print("embedding reading")
+        self.embeddings = gensim.models.KeyedVectors.\
+            load_word2vec_format(self.embedding_file, binary=False, unicode_errors='ignore')
+        print("finish reading")
 
     def get_question_answer(self, question_str, answer_options, stop_word_path):
         """
@@ -19,9 +26,9 @@ class ReadDocumentContent:
         :param stop_word_path: path, e.g. "./data/stopwords.txt"
         :return: possible_answers: list of tuple, [(answer(str), similarity(number)] [("76个本科专业", 0.1555555)]
         """
-        question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram)
-        tfidf = RetrievalTFIDF(answer_options, question.answer_types, ngram=self.ngram)
-        possible_answers = tfidf.query(question.question_vector)
+        question = ProcessQuestion(question_str, stop_word_path, self.embeddings, ngram=self.ngram)
+        word_embedding = RetrievalWordEmbedding(answer_options, question.answer_types, self.embeddings, ngram=self.ngram)
+        possible_answers = word_embedding.query(question.question_embedding)
         return possible_answers
 
 

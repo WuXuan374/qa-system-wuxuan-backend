@@ -34,5 +34,9 @@
   "fourth version(filtered by answer type)(ngram=3)": {
     "MRR": 0.3218562874251502,
     "accuracy:": 0.406437125748503
+  },
+  "5th version(word2vec)(ngram=1)": {
+    "MRR": 0.26166417165668676,
+    "accuracy:": 0.3858532934131737
   }
 }

@@ -1,3 +1,4 @@
 venv
 data/ChineseDBQA
 .idea
+data/word2vec

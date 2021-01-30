@@ -12,7 +12,6 @@ class Evaluation:
         self.reader = ReadDocumentContent(self.source_file, self.ngram)
         self.content = self.reader.content
 
-
     def compute_metrics(self):
         """
         compute evaluation metrics: MRR and Accuracy
@@ -43,13 +42,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/output/fileContent.json", ngram=3)
+    evaluation = Evaluation("./data/output/fileContent.json", ngram=2)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******fourth version(filtered by answer type) evaluation(ngram=3)")
+    print("*******5th version(word2vec) evaluation(ngram=2)")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "fourth version(filtered by answer type)(ngram=3)": {
+        "5th version(word2vec)(ngram=2)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

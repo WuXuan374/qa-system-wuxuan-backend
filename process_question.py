@@ -1,11 +1,30 @@
 from ltp import LTP
 import os
 import json
+import numpy as np
+import gensim
 ltp = LTP()
 
 
+def word2vec(tokens, embeddings):
+    """
+    输入词链表，生成对应的word embedding vector
+    :param tokens: list, e.g, ["浙江大学", "人文学院"]
+    :param embeddings: gensim 读取预训练词向量的结果
+    :return: word_vec: list of array, e.g. [[0.1,0.3...,0.5]], 每一个数组是300维的
+    """
+    dim = embeddings['word'].size
+    word_vec = []
+    for word in tokens:
+        if word in embeddings:
+            word_vec.append(embeddings[word])
+        else:
+            word_vec.append(np.random.uniform(-0.25, 0.25, dim))
+    return np.array(word_vec)
+
+
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, ngram=1):
+    def __init__(self, question, stop_word_path, embeddings, ngram=1):
         if os.path.isfile(stop_word_path):
             fp = open(stop_word_path, 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
@@ -19,6 +38,7 @@ class ProcessQuestion:
         # self.answer_type = self.determine_answer_type()
         self.question_vector = self.get_vector(self.ngram_question)
         self.answer_types = self.determine_answer_type()
+        self.question_embedding = word2vec(self.ngram_question, embeddings)
 
     def tokenize(self, question):
         """
@@ -111,6 +131,11 @@ class ProcessQuestion:
 if __name__ == "__main__":
     with open("./data/output/fileContent.json", 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
+    embedding_file = "./data/word2vec/word2vec-300.iter5"
+    print("embedding reading")
+    embeddings = gensim.models.KeyedVectors.\
+        load_word2vec_format(embedding_file, binary=False, unicode_errors='ignore')
     for question_str in content.keys():
-        question = ProcessQuestion(question_str, './data/stopwords.txt', ngram=2)
+        question = ProcessQuestion(question_str, './data/stopwords.txt', embeddings, ngram=2)
         answer_types = question.determine_answer_type()
+        print(answer_types)

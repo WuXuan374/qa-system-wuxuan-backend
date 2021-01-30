@@ -1,15 +1,12 @@
 # qa-system-wuxuan-backend
-## version 3 
-### 与version 2 的主要区别
-- 只是对停止词进行了修改，因为发现之前的停止词对bigram，trigram影响较大
-### 实验结论
-- 再次进行了测试，发现bigram，trigram的表现好了很多
+## version 5 
+### 思路
+- 将问题和答案利用预训练的word embedding 进行表示
+- 计算问题和答案的embedding之间的cosine similarity, 根据相似度对答案进行排序
 
-## version 4
-### 与version 3 的主要区别
-- 基于IRQA中提出的一些语义技巧，对部分问题所期待的答案类型进行了标注
-- 在检索答案时，首先根据标注的答案类型对候选答案进行预处理
-- 在选中答案之后，根据标注的答案类型来提取更加准确的答案（人名、时间、地名等）
+### 实验结果
+- 准确率和MRR比之前基于TFIDF的检索要差不少
 
-### 实验结论
-- 现实很残忍，还不如version 3......
+### 下一步思路
+- 再试试Document Embedding/ Sentence Embedding?
+- 基于CNN模型进行问答
