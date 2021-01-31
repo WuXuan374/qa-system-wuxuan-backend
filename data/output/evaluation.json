@@ -38,5 +38,9 @@
   "5th version(word2vec)(ngram=1)": {
     "MRR": 0.26166417165668676,
     "accuracy:": 0.3858532934131737
+  },
+  "5th version(word2vec)(ngram=2)": {
+    "MRR": 0.2714570858283436,
+    "accuracy:": 0.3948353293413174
   }
 }
