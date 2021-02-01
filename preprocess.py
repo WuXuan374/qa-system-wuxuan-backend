@@ -2,6 +2,7 @@ import os
 import csv
 from ltp import LTP
 import json
+import time
 
 
 class FileContent:
@@ -123,12 +124,23 @@ def preprocess(option):
 
 
 if __name__ == "__main__":
-    # res = read_tsv_file('./data/ChineseDBQA/nlpcc2017.dbqa.train')
+    train_file_path = './data/ChineseDBQA/nlpcc2017.dbqa.train'
+    validation_file_path = './data/ChineseDBQA/nlpcc2017.dbqa.dev'
+    test_file_path = './data/ChineseDBQA/nlpcc2017.dbqa.test'
+    time_start = time.time()
+    with open('./data/output/fileContent.json', 'r', encoding="utf-8") as load_j:
+        content = json.load(load_j)
+    time_end = time.time()
+    print("read json", time_end - time_start)
+    time_start = time.time()
+    res = read_tsv_file(train_file_path)
+    time_end = time.time()
+    print("read file", time_end - time_start)
     # file_content = keyword_extraction(res)
     # with open('./data/output/fileContent.json', 'w', encoding="utf-8") as fp:
     #     json.dump(file_content, fp, indent=4, ensure_ascii=False, default=file_content_to_dict)
-    keywords = get_keyword("新北市私立辞修高级中学学校名称的由来是什么？")
-    print(keywords)
+    # keywords = get_keyword("新北市私立辞修高级中学学校名称的由来是什么？")
+    # print(keywords)
 
 
 
