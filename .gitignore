@@ -3,3 +3,4 @@ data/ChineseDBQA
 .idea
 data/word2vec
 data/input
+data/models

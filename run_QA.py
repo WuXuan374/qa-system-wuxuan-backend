@@ -1,4 +1,4 @@
-# from retrieval_TFIDF import RetrievalTFIDF
+from retrieval_TFIDF import RetrievalTFIDF
 from process_question import ProcessQuestion
 from retrieval_word_embeddings import RetrievalWordEmbedding
 import json
@@ -27,8 +27,10 @@ class ReadDocumentContent:
         :return: possible_answers: list of tuple, [(answer(str), similarity(number)] [("76个本科专业", 0.1555555)]
         """
         question = ProcessQuestion(question_str, stop_word_path, self.embeddings, ngram=self.ngram)
-        word_embedding = RetrievalWordEmbedding(answer_options, question.answer_types, self.embeddings, ngram=self.ngram)
-        possible_answers = word_embedding.query(question.question_embedding)
+        # word_embedding = RetrievalWordEmbedding(answer_options, question.answer_types, self.embeddings, ngram=self.ngram)
+        # possible_answers = word_embedding.query(question.question_embedding)
+        tfidf = RetrievalTFIDF(answer_options, question.answer_types, ngram=self.ngram)
+        possible_answers = tfidf.query(question.question_vector)
         return possible_answers
 
 

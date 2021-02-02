@@ -27,6 +27,14 @@
     "MRR": 0.40182135728543006,
     "accuracy:": 0.5280688622754491
   },
+  "4th version(top5)(ngram=1)": {
+    "MRR": 0.4073353293413186,
+    "accuracy:": 0.5737275449101796
+  },
+  "4th version(top8)(ngram=1)": {
+    "MRR": 0.4150141680923871,
+    "accuracy:": 0.625374251497006
+  },
   "fourth version(filtered by answer type)(ngram=2)": {
     "MRR": 0.35822105788423203,
     "accuracy:": 0.4539670658682635

@@ -131,7 +131,7 @@ class RetrievalTFIDF:
         length = len(top_options)
         if length == 0:
             return [None]
-        return sorted(top_options, key=lambda x: x[1], reverse=True)[:3 if length >= 3 else length]
+        return sorted(top_options, key=lambda x: x[1], reverse=True)[:8 if length >= 8 else length]
 
     def filter_options_by_answer_type(self, answer_types, option):
         """
