@@ -9,6 +9,53 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import optim
 import matplotlib.pyplot as plt
+from collections import Counter
+import numpy as np
+from imblearn.over_sampling import SMOTE
+from torch.autograd import Variable
+
+
+class FocalLoss(nn.Module):
+    """
+    Loss(x, class) = - alpha * (1-softmax(x)[class])^gamma * log(softmax(x)[class])
+    """
+    def __init__(self, class_num, alpha=None, gamma=2):
+        super(FocalLoss, self).__init__()
+        if alpha is None:
+            self.alpha = Variable(torch.ones(class_num, 1))
+        else:
+            if isinstance(alpha, Variable):
+                self.alpha = alpha
+            else:
+                self.alpha = Variable(alpha)
+        self.gamma = gamma
+        self.class_num = class_num
+
+    def forward(self, inputs, targets):
+        N = inputs.size(0)
+        C = inputs.size(1)
+        P = F.softmax(inputs)
+
+        class_mask = inputs.data.new(N, C).fill_(0)
+        class_mask = Variable(class_mask)
+        ids = targets.view(-1, 1)
+        class_mask.scatter_(1, ids.data, 1.)
+        #print(class_mask)
+
+        alpha = self.alpha[ids.data.view(-1)]
+
+        probs = (P*class_mask).sum(1).view(-1, 1)
+
+        log_p = probs.log()
+        #print('probs size= {}'.format(probs.size()))
+        #print(probs)
+
+        batch_loss = -alpha*(torch.pow((1-probs), self.gamma))*log_p
+        #print('-----bacth_loss------')
+        #print(batch_loss)
+
+        loss = batch_loss.mean()
+        return loss
 
 
 class CnnModel(nn.Module):
@@ -22,14 +69,14 @@ class CnnModel(nn.Module):
         self.dropout_rate = dropout_rate
         self.vocab_size = vocab_size
         self.embedding_file = embedding_file
-        self.word2idx = word2idx
-        # 加1是因为oov token的存在
+        # self.word2idx = word2idx
+        #         # 加1是因为oov token的存在
+        # 先使用随机生成的embedding
+        # self.embedding_layer = nn.Embedding(self.dict_size, self.embedding_dim)
+
+        self.embedding_layer, self.word2idx = self.read_word2vec()
         self.dict_size = len(self.word2idx.keys()) + 1
         print(self.dict_size)
-
-        # 先使用随机生成的embedding
-        self.embedding_layer = nn.Embedding(self.dict_size, self.embedding_dim)
-        # self.embedding_layer, self.word2idx = self.read_word2vec()
 
         self.oov_index = self.dict_size-1
         self.num_feature_maps = len(filter_size) * self.num_of_filter
@@ -110,6 +157,9 @@ class ModelLoader:
         self.train_data_path = "../data/input/train.json"
         with open(self.train_data_path, 'r', encoding="utf-8") as load_j:
             self.train_data = json.load(load_j)
+        self.validation_data_path = "../data/input/validation.json"
+        with open(validation_data_path, 'r', encoding="utf-8") as load_j:
+            self.validation_data = json.load(load_j)
         with open('../data/models/word2idx.pickle', 'rb') as handle:
             self.word2idx = pickle.load(handle)
         self.vocab_size = 605
@@ -137,20 +187,63 @@ class ModelLoader:
         return sentences_vector
 
     def get_answer_from_model(self, question_str):
-        questions = []
-        answers = []
-        labels = []
-        for item in self.train_data[question_str]:
-            print(item)
-            labels.append(int(item[0]))
-            questions.append(item[1])
-            answers.append(item[2])
-        questions_matrix = self.sentence_encode(questions)  # (7445, vocab_size)
-        answers_matrix = self.sentence_encode(answers)  # (7445, vocab_size)
-        labels_matrix = torch.tensor(labels, dtype=torch.long)  # (7445, )
-        pred_prop, pred_value = self.model(questions_matrix, answers_matrix)
-        print(pred_prop)
-        print(pred_value)
+        for question in self.train_data.keys():
+            questions = []
+            answers = []
+            labels = []
+            for item in self.train_data[question]:
+                labels.append(int(item[0]))
+                questions.append(item[1])
+                answers.append(item[2])
+            questions_matrix = self.sentence_encode(questions)  # (7445, vocab_size)
+            answers_matrix = self.sentence_encode(answers)  # (7445, vocab_size)
+            labels_matrix = torch.tensor(labels, dtype=torch.long)  # (7445, )
+            pred_prop, pred_value = self.model(questions_matrix, answers_matrix)
+            print(labels_matrix)
+            print(pred_prop)
+            print(pred_value)
+        # questions_matrix = self.sentence_encode(questions)  # (7445, vocab_size)
+        # answers_matrix = self.sentence_encode(answers)  # (7445, vocab_size)
+        # labels_matrix = torch.tensor(labels, dtype=torch.long)  # (7445, )
+        # pred_prop, pred_value = self.model(questions_matrix, answers_matrix)
+        # print(labels_matrix)
+        # # print(pred_prop)
+        # print(pred_value)
+
+    def evaluation(self, data):
+        """
+        计算用于评估模型效果的相关指标
+        :param data: from json.load
+        :return: mrr(num)
+        :return: acc(num): 针对每一个问题，对模型预测的props进行排序，取前三者作为候选答案。如果候选答案中存在正确答案，则acc_sum+=1, mrr_sum+= 1/(index+1)
+        :return: true_answer_acc: 真实标签为"1"处，如果预测标签为"1", 则true_label_acc_sum+=1
+        """
+        question_num = len(data.keys())
+        mrr_sum = 0
+        acc_sum = 0
+        true_label_acc_sum = 0
+        for question_str in data.keys():
+            print(question_str)
+            labels = list(map(lambda item: int(item[0]), data[question_str]))
+            questions = list(map(lambda item: item[1], data[question_str]))
+            answers = list(map(lambda item: item[2], data[question_str]))
+            answers_matrix = self.sentence_encode(answers)
+            questions_matrix = self.sentence_encode(questions)
+            labels_matrix = torch.tensor(labels, dtype=torch.long)
+            pred_prop, pred_value = self.model(questions_matrix, answers_matrix)
+            if torch.equal(torch.nonzero(labels_matrix), torch.nonzero(pred_value)):
+                true_label_acc_sum += 1
+            # enumerate(answers): [(0, ["北京大学",])], x[0]: index, pred_prop[x[0]][1]: 预测标签为1的softmax概率
+            candidate_answers = sorted(enumerate(answers), key=lambda x: float(pred_prop[x[0]][1]), reverse=True)[:3]
+            for index, answer in candidate_answers:
+                if labels[index] == 1:
+                    mrr_sum += 1 / (index + 1)
+                    acc_sum += 1
+                    break
+        mrr = mrr_sum / question_num
+        acc = acc_sum / question_num
+        true_answer_acc = true_label_acc_sum / question_num
+        return mrr, acc, true_answer_acc
 
 
 def sentence_encode(sentences, vocab_size, oov_index, word2idx):
@@ -162,11 +255,13 @@ def sentence_encode(sentences, vocab_size, oov_index, word2idx):
     :param: word2idx: dict, e.g. {"今天": 1}
     :return:sentences_vector： (len(sentences), vocab_size), 每一行是一个句子对应的bag-of-words向量
     """
-    sentences_vector = torch.zeros([len(sentences), vocab_size], dtype=torch.long)
+    # sentences_vector = torch.zeros([len(sentences), vocab_size], dtype=torch.long)
+    sentences_vector = np.zeros([len(sentences), vocab_size], dtype=np.long)
     for i in range(len(sentences)):
         sentence = sentences[i]
         # oov token: 0
-        vector = torch.full((1, vocab_size), oov_index, dtype=torch.long)
+        # vector = torch.full((1, vocab_size), oov_index, dtype=torch.long)
+        vector = np.full((1, vocab_size), oov_index, dtype=np.long)
         for j in range(min(len(sentence), vocab_size)):
             word = sentence[j]
             if word in word2idx.keys():
@@ -175,14 +270,74 @@ def sentence_encode(sentences, vocab_size, oov_index, word2idx):
     return sentences_vector
 
 
-def accuracy(predicted_labels, yb):
+def over_sample_data(question, answers, labels, vocab_size):
     """
-    比较模型预测的标签和实际的标签， 计算模型的准确率
-    :param: predicted_labels: (batch_size, )
-    :param: yb: (batch_size, )
-    :return:
+    由于数据集存在数据不均衡的问题：标签为0的数据: 标签为1的数据 = 15:1
+    我们需要对数据进行均衡，避免影响训练效果
+    返回的数据都是torch tensor, 满足模型训练的需要
+    :param question: numpy array (50694, vocab_size)
+    :param answers: numpy array (50694, vocab_size)
+    :param labels: list, len=50694
+    :return: questions, answers, labels: torch.tensor
     """
-    return (predicted_labels == yb).float().mean()
+    # 需要对问题和答案数组进行拼接，因为fit_sample只接受x,y这两个输入
+    x_train = np.concatenate((question, answers), axis=1)
+    sm = SMOTE(random_state=2)
+    x_train, labels = sm.fit_sample(x_train, labels)
+    questions = x_train[..., 0:vocab_size]
+    answers = x_train[..., vocab_size:]
+    questions = torch.tensor(questions, dtype=torch.long)
+    answers = torch.tensor(answers, dtype=torch.long)
+    labels = torch.tensor(labels, dtype=torch.long)
+
+    return questions, answers, labels
+
+
+# def accuracy(predicted_labels, yb):
+#     """
+#     比较模型预测的标签和实际的标签， 计算模型的准确率
+#     :param: predicted_labels: (batch_size, )
+#     :param: yb: (batch_size, )
+#     :return:
+#     """
+#     return (predicted_labels == yb).float().mean()
+def evaluation(data, vocab_size, oov_index, word2idx, model):
+    """
+    计算用于评估模型效果的相关指标
+    :param data: from json.load
+    :param vocab_size:
+    :param oov_index:
+    :param word2idx:
+    :param model:
+    :return: mrr(num)
+    :return: acc(num): 针对每一个问题，对模型预测的props进行排序，取前三者作为候选答案。如果候选答案中存在正确答案，则acc_sum+=1, mrr_sum+= 1/(index+1)
+    :return: true_answer_acc: 真实标签为"1"处，如果预测标签为"1", 则true_label_acc_sum+=1
+    """
+    question_num = len(data.keys())
+    mrr_sum = 0
+    acc_sum = 0
+    true_label_acc_sum = 0
+    for question_str in data.keys():
+        labels = list(map(lambda item: int(item[0]), data[question_str]))
+        questions = list(map(lambda item: item[1], data[question_str]))
+        answers = list(map(lambda item: item[2], data[question_str]))
+        answers_matrix = torch.tensor(sentence_encode(answers, vocab_size, oov_index, word2idx), dtype=torch.long)
+        questions_matrix = torch.tensor(sentence_encode(questions, vocab_size, oov_index, word2idx), dtype=torch.long)
+        labels_matrix = torch.tensor(labels, dtype=torch.long)
+        pred_prop, pred_value = model(questions_matrix, answers_matrix)
+        if torch.equal(torch.nonzero(labels_matrix), torch.nonzero(pred_value)):
+            true_label_acc_sum += 1
+        # enumerate(answers): [(0, ["北京大学",])], x[0]: index, pred_prop[x[0]][1]: 预测标签为1的softmax概率
+        candidate_answers = sorted(enumerate(answers), key=lambda x: float(pred_prop[x[0]][1]), reverse=True)[:3]
+        for index, answer in candidate_answers:
+            if labels[index] == 1:
+                mrr_sum += 1/(index+1)
+                acc_sum += 1
+                break
+    mrr = mrr_sum/question_num
+    acc = acc_sum/question_num
+    true_answer_acc = true_label_acc_sum/question_num
+    return mrr, acc, true_answer_acc
 
 
 def get_data_by_batch(train_ds, val_ds, bs):
@@ -252,16 +407,21 @@ def draw_loss(loss_train, loss_valid, epochs):
     plt.show()
 
 
-def train(model, optimizer, train_ds, val_ds, bs, epochs):
+def train(model, optimizer, train_ds, val_ds, bs, epochs, train_data, validation_data, vocab_size, oov_index, word2idx):
     train_dl, val_dl = get_data_by_batch(train_ds, val_ds, bs)
-    loss_func = nn.CrossEntropyLoss()
+    # loss_func = nn.CrossEntropyLoss()
+    loss_func = FocalLoss(class_num=2)
     loss_train, loss_validation = fit(epochs, model, optimizer, loss_func, train_dl, val_dl)
     draw_loss(loss_train, loss_validation, epochs)
-    train_accu = sum(accuracy(model(qb, ab)[1], lb) for qb, ab, lb in train_dl)/len(train_dl)
-    print('train ', train_accu)
-    val_accu = sum(accuracy(model(qb, ab)[1], lb) for qb, ab, lb in val_dl) / len(val_dl)
-    print('validation ', val_accu)
-    return train_accu, val_accu
+    train_mrr, train_acc, train_true_answer_acc = evaluation(train_data, vocab_size, oov_index, word2idx, model)
+    val_mrr, val_acc, val_true_answer_acc = evaluation(validation_data, vocab_size, oov_index, word2idx, model)
+    print('train mrr ', train_mrr)
+    print('train_acc ', train_acc)
+    print('train_true_answer_acc', train_true_answer_acc)
+    print('val_mrr ', val_mrr)
+    print('val_acc ', val_acc)
+    print('val_true_answer_acc ', val_true_answer_acc)
+    return train_mrr, train_acc, train_true_answer_acc, val_mrr, val_acc, val_true_answer_acc
 
 
 def test(train_ds, val_ds, bs, model_path):
@@ -278,26 +438,20 @@ def test(train_ds, val_ds, bs, model_path):
 
 if __name__ == "__main__":
     # 参数定义
-    vocab_size = 605
-    embedding_dim = 100
+    vocab_size = 30
+    embedding_dim = 300
     n_in = 20
     n_hidden = 128
     n_out = 2
     lr = 1e-5
-    bs = 800
-    epochs = 7
+    bs = 400
+    epochs = 1
     with open('../data/models/word2idx.pickle', 'rb') as handle:
         word2idx = pickle.load(handle)
     oov_index = len(word2idx.keys())  # 635963
     # word2idx需要提前保存，不然使用模型时要花很长时间加载
-    # with open('../data/models/word2idx.pickle', 'wb') as handle:
-    #     pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    model = CnnModel(embedding_file="../data/word2vec/word2vec-300.iter5",
-                     embedding_dim=embedding_dim, vocab_size=vocab_size,
-                     save_path="../data/models/model_CNN_epochs=7_0202.pth",
-                     word2idx=word2idx, n_in=n_in, n_hidden=n_hidden, n_out=n_out)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    with open('../data/models/word2idx.pickle', 'wb') as handle:
+        pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # 数据读取
     train_data_path = "../data/input/train.json"
@@ -306,6 +460,12 @@ if __name__ == "__main__":
         train_data = json.load(load_j)
     with open(validation_data_path, 'r', encoding="utf-8") as load_j:
         validation_data = json.load(load_j)
+
+    # model = CnnModel(embedding_file="../data/word2vec/word2vec-300.iter5",
+    #                  embedding_dim=embedding_dim, vocab_size=vocab_size,
+    #                  save_path="../data/models/model_CNN_focalloss_evaluation.pth",
+    #                  word2idx=word2idx, n_in=n_in, n_hidden=n_hidden, n_out=n_out)
+    # optimizer = optim.Adam(model.parameters(), lr=lr)
     # 训练集数据
     train_questions = []
     train_answers = []
@@ -317,8 +477,12 @@ if __name__ == "__main__":
             train_answers.append(item[2])
     train_questions = sentence_encode(train_questions, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
     train_answers = sentence_encode(train_answers, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
-    train_labels = torch.tensor(train_labels, dtype=torch.long)  # (50964, )
+    # train_questions: torch.Size([95334, vocab_size])
+    # train_answers: torch.Size([95334, vocab_size])
+    # train_labels: torch.Size([95334])
 
+    train_questions, train_answers, train_labels = \
+        over_sample_data(train_questions, train_answers, train_labels, vocab_size)
     # 验证集数据
     val_questions = []
     val_answers = []
@@ -330,20 +494,32 @@ if __name__ == "__main__":
             val_answers.append(item[2])
     val_questions = sentence_encode(val_questions, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
     val_answers = sentence_encode(val_answers, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
-    val_labels = torch.tensor(val_labels, dtype=torch.long)  # (7445, )
-
+    # val_questions: torch.Size([14022, vocab_size])
+    # val_answers: torch.Size([14022, vocab_size])
+    # val_labels: torch.Size([14022])
+    val_questions, val_answers, val_labels = over_sample_data(val_questions, val_answers, val_labels, vocab_size)
     # TensorDataset: dataset wrapping, 方便分批从数据集中取数据
     train_dataset = TensorDataset(train_questions, train_answers, train_labels)
     val_dataset = TensorDataset(val_questions, val_answers, val_labels)
 
     # 训练
-    train_accu, validation_accu = train(model, optimizer, train_dataset, val_dataset, bs, epochs)
+    # train_mrr, train_acc, train_true_answer_acc, val_mrr, val_acc, val_true_answer_acc = \
+    #     train(model, optimizer, train_dataset, val_dataset, bs, epochs, train_data, validation_data, vocab_size, oov_index, word2idx)
 
-    # # 读取保存的模型，测试模型能否使用
+    # 读取保存的模型，测试模型能否使用
     # train_accu, val_accu = test(train_dataset, val_dataset, bs,
     #                             model_path="../data/models/model_CNN_epochs=1_0202.pth")
 
-    # model_loader = ModelLoader('../data/models/model_CNN_epochs=1_0202.pth')
+    model_loader = ModelLoader('../data/models/model_CNN_focalloss_epochs=10.pth')
     # model_loader.get_answer_from_model("大叻大学的越语是什么，在什么地方？")
+    train_mrr, train_acc, train_true_answer_acc = model_loader.evaluation(model_loader.train_data)
+    val_mrr, val_acc, val_true_answer_acc = model_loader.evaluation(model_loader.validation_data)
+    print('train mrr ', train_mrr)
+    print('train_acc ', train_acc)
+    print('train_true_answer_acc', train_true_answer_acc)
+    print('val_mrr ', val_mrr)
+    print('val_acc ', val_acc)
+    print('val_true_answer_acc ', val_true_answer_acc)
+
     # prop: (5,2), 在0/1标签上的概率分布
     # cate: (5,) [1,1,0,1,0] 所预测的标签
