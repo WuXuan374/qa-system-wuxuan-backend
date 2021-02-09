@@ -1,7 +1,7 @@
-                1 epoch  10 epochs
+                1 epoch  10 epochs 4 epochs alpha=0.75   vocab_size=15 3 epochs  alpha=0.25 5 epochs   train_2017
 train mrr       0.063    0.095
 train_acc       0.178    0.264
 train_true_acc  0.002    0.007
-val_mrr         0.073    0.089
-val_acc         0.188    0.234
-val_true_acc    0.002    0
+val_mrr         0.073    0.089     0.062                 0.10                    0.09                   0.11
+val_acc         0.188    0.234     0.165                 0.254                   0.23                   0.27
+val_true_acc    0.002    0         0.005                 0                       0                      0

@@ -2,12 +2,14 @@ import os
 import csv
 import jieba
 import json
+from collections import Counter
+import pickle
 
 
 class PreProcess:
     def __init__(self):
         # 文件路径
-        self.initial_train_data = '../data/ChineseDBQA/nlpcc2017.dbqa.train'
+        self.initial_train_data = '../data/ChineseDBQA/nlpcc2016.dbqa.test'
         self.initial_validation_data = '../data/ChineseDBQA/nlpcc2017.dbqa.dev'
         self.initial_test_data = '../data/ChineseDBQA/nlpcc2017.dbqa.test'
         self.processed_train = '../data/input/train.json'
@@ -61,9 +63,25 @@ class PreProcess:
                      for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
         return word_list
 
+    def get_word2idx(self):
+        dict_size = 70000
+        with open(self.processed_train, 'r', encoding="utf-8") as load_j:
+            train_data = json.load(load_j)
+        all_words = []
+        for question in train_data.keys():
+            for item in train_data[question]:
+                all_words.extend(item[1])
+                all_words.extend(item[2])
+        freq_dict = Counter(all_words)
+        idx2word = dict(enumerate([word for (word, freq) in freq_dict.most_common(dict_size)]))
+        word2idx = dict([(value, key) for (key, value) in idx2word.items()])
+        with open('../data/models/word2idx.pickle', 'wb') as handle:
+            pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == "__main__":
     preprocess = PreProcess()
     result = preprocess.read_tsv_file(preprocess.initial_train_data)
     with open(preprocess.processed_train, 'w', encoding="utf-8") as fp:
         json.dump(result, fp, indent=4, ensure_ascii=False)
+    # preprocess.get_word2idx()
