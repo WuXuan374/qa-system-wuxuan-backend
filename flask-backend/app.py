@@ -7,12 +7,13 @@ import sys
 sys.path.append("..")
 from run_QA import ReadDocumentContent
 from preprocess import get_keyword
+from question_retrieval import QuestionRetrieval
 
 app = Flask(__name__)
 CORS(app)
 
-# read file content
-sourcefile = './data/fileContent.json'
+# read file contentcontent
+sourcefile = './data/train_2016_new.json'
 if os.path.isfile(sourcefile):
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
@@ -41,8 +42,8 @@ def get_titles_by_keywords(keywords):
             for query_keyword in keywords:
                 # 关键词完全匹配 or 用户关键词是文档关键词的子集
                 # e.g. 用户关键词：“北京大学”  文档关键词： “北京大学药学院”
-                if query_keyword == keywordInfo[1] \
-                        or keywordInfo[1].find(query_keyword) != -1:
+                if query_keyword == keywordInfo \
+                        or keywordInfo.find(query_keyword) != -1:
                     # 通过上述关键词匹配，获得文本库中所有相关文本的标题(question)
                     questions.append(question)
                     # 有一个关键词匹配，就可以跳过当前循环，去查找下一个文本
@@ -54,8 +55,7 @@ def get_titles_by_keywords(keywords):
 def get_answers():
     """
     用户输入问题--> 返回top3候选答案
-    用户输入问题A --> 提取问题A中的关键词 -->
-    通过关键词查找匹配方式，寻找语料库中相似的问题B --> 在问题B对应的文本中查找候选答案
+    用户输入问题A --> 通过计算tfIdf cosine similarity,寻找语料库中相似的问题B --> 在问题B对应的文本中查找候选答案
     :return: 404： 用户输入的问题为空/没有在语料库中找到和这个问题相关的文本
     :return: 200： {'answers': answers}
     """
@@ -64,11 +64,11 @@ def get_answers():
     if question_str is None or len(question_str) == 0:
         return make_response(jsonify({'error': 'Not found'}), 404)
     else:
-        reader = ReadDocumentContent(sourcefile, ngram=2)
-        keywords = get_keyword(question_str)
-        # question_titles: list
-        question_titles = get_titles_by_keywords(keywords)
-        # question_titles = [question_str]
+        reader = ReadDocumentContent(sourcefile, ngram=1)
+        question_options = list(content.keys())
+        question_retrieval = QuestionRetrieval(question_str, question_options, top_num=3)
+        # question_titles: list, e.g ['《野猪历险记》的游戏语言是什么？', ]
+        question_titles = list(map(lambda option: option[0], question_retrieval.candidate_options))
         # sorted_answers: [answer, score, document_title]
         sorted_answers = []
         if not question_titles:
@@ -81,8 +81,7 @@ def get_answers():
                 item["document_title"] = title
                 sorted_answers.append(item)
         # 从多个文本中，每个文本收集三个答案，随后对收集到的所有答案再根据score进行排序
-        length = len(sorted_answers)
-        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3 if length >= 3 else length]
+        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3]
         return jsonify({'answers': sorted_answers})
 
 
@@ -93,10 +92,10 @@ def get_keywords():
     """
     keywords = []
     for question in content.keys():
-        for tag, keyword in content[question]["keywords"]:
+        for keyword in content[question]["keywords"]:
             # 去重
-            if (tag, keyword) not in keywords:
-                keywords.append((tag, keyword))
+            if keyword not in keywords:
+                keywords.append(keyword)
     return jsonify({'keywords': keywords})
 
 

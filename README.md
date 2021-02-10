@@ -1,12 +1,12 @@
 # qa-system-wuxuan-backend
-## version 5 
-### 思路
-- 将问题和答案利用预训练的word embedding 进行表示
-- 计算问题和答案的embedding之间的cosine similarity, 根据相似度对答案进行排序
+## version 7 
+### 重要改动
+- 基于nlpcc 2016 test data, 进行模型评估和问答
+- 修改了数据集后，系统准确率大幅提升，达到了MRR 62%, Accuracy 71%.
+- 基于sklearn 的tfidfVectorizer 和 scipy的distance.cosine完成了问题的相似度计算
+  感悟：这两者对数据格式有一定要求（需要预处理），但用起来较方便。
 
-### 实验结果
-- 准确率和MRR比之前基于TFIDF的检索要差不少
-
-### 下一步思路
-- 再试试Document Embedding/ Sentence Embedding?
-- 基于CNN模型进行问答
+### 整体思路
+- Question Retrieval: 用户输入问题A, 通过计算与语料库中问题B的cosine similarity，对相似问题进行筛选
+- Sentence Retrieval: 问题A与问题B对应的选项之间计算cosine similarity, 对答案进行排序筛选
+- 返回top3 答案给用户

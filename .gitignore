@@ -4,3 +4,6 @@ data/ChineseDBQA
 data/word2vec
 data/input
 data/models
+data/TFIDF_input
+flask-backend/data
+__pycache__

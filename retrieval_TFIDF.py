@@ -14,7 +14,8 @@ class RetrievalTFIDF:
         # 答案的预期类型，根据问题得到的
         self.answer_types = answer_types
         # 首先根据问句类型，对候选答案进行一次筛选
-        self.options = list(filter(lambda option: self.filter_options_by_answer_type(self.answer_types, option), options))
+        # self.options = list(filter(lambda option: self.filter_options_by_answer_type(self.answer_types, option), options))
+        self.options = options
         if os.path.isfile('./data/stopwords.txt'):
             fp = open('./data/stopwords.txt', 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
@@ -131,7 +132,7 @@ class RetrievalTFIDF:
         length = len(top_options)
         if length == 0:
             return [None]
-        return sorted(top_options, key=lambda x: x[1], reverse=True)[:8 if length >= 8 else length]
+        return sorted(top_options, key=lambda x: x[1], reverse=True)[:3 if length >= 3 else length]
 
     def filter_options_by_answer_type(self, answer_types, option):
         """
@@ -144,6 +145,9 @@ class RetrievalTFIDF:
         if not answer_types:
             return True
         answer_str = "".join(option)
+        if not answer_str or answer_str.isspace() or answer_str.startswith('\ue524'):
+            print('answer_str', answer_str)
+            return False
         named_entities = self.get_named_entity(answer_str)
         for entity in named_entities:
             if entity[0] == 'Nh' and "PERSON" in answer_types:

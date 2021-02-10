@@ -24,7 +24,7 @@ def word2vec(tokens, embeddings):
 
 
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, embeddings, ngram=1):
+    def __init__(self, question, stop_word_path, ngram=1):
         if os.path.isfile(stop_word_path):
             fp = open(stop_word_path, 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
@@ -38,7 +38,7 @@ class ProcessQuestion:
         # self.answer_type = self.determine_answer_type()
         self.question_vector = self.get_vector(self.ngram_question)
         self.answer_types = self.determine_answer_type()
-        self.question_embedding = word2vec(self.ngram_question, embeddings)
+        # self.question_embedding = word2vec(self.ngram_question, embeddings)
 
     def tokenize(self, question):
         """

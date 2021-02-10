@@ -4,6 +4,29 @@ import jieba
 import json
 from collections import Counter
 import pickle
+from ltp import LTP
+ltp = LTP()
+
+
+class FileContent:
+    def __init__(self):
+        self.answer_options = []
+        self.right_answer = ""
+        self.keywords = []
+
+    def add_answer_options(self, option):
+        self.answer_options.append(option)
+
+    def set_right_answer(self, answer):
+        self.right_answer = answer
+
+
+def file_content_to_dict(f):
+    return {
+        'keywords': f.keywords,
+        'right answer': f.right_answer,
+        'options': f.answer_options,
+    }
 
 
 class PreProcess:
@@ -12,17 +35,37 @@ class PreProcess:
         self.initial_train_data = '../data/ChineseDBQA/nlpcc2016.dbqa.test'
         self.initial_validation_data = '../data/ChineseDBQA/nlpcc2017.dbqa.dev'
         self.initial_test_data = '../data/ChineseDBQA/nlpcc2017.dbqa.test'
-        self.processed_train = '../data/input/train.json'
-        self.processed_val = '../data/input/validation.json'
+        self.processed_train = '../data/TFIDF_input/train_2016_new.json'
+        self.processed_val = '../data/TFIDF_input/validation.json'
         self.processed_test = '../data/input/test.json'
 
-        if os.path.isfile('../data/stopwords.txt'):
-            fp = open('../data/stopwords.txt', 'r', encoding='utf-8')
-            self.stopwords = [line.strip('\n') for line in fp.readlines()]
-        else:
-            raise Exception("stop words file not exists!\n")
+        # if os.path.isfile('../data/stopwords.txt'):
+        #     fp = open('../data/stopwords.txt', 'r', encoding='utf-8')
+        #     self.stopwords = [line.strip('\n') for line in fp.readlines()]
+        # else:
+        #     raise Exception("stop words file not exists!\n")
 
     # 数据预处理
+    # def read_tsv_file(self, filename):
+    #     """
+    #     :param filename: string
+    #     :return: res: dictionary
+    #     """
+    #     res = dict()
+    #     if os.path.isfile(filename):
+    #         tsv_file = open(filename, 'r', encoding="utf-8")
+    #         read_tsv = csv.reader(tsv_file, delimiter="\t")
+    #         for row in read_tsv:
+    #             label, question, content = row
+    #             print(question)
+    #             if res.get(question) is None:
+    #                 res[question] = []
+    #             res[question].append((label, self.tokenize(question, ngram=1), self.tokenize(content, ngram=1)))
+    #     else:
+    #         raise Exception(filename + " not exists\n")
+    #
+    #     return res
+
     def read_tsv_file(self, filename):
         """
         :param filename: string
@@ -36,8 +79,10 @@ class PreProcess:
                 label, question, content = row
                 print(question)
                 if res.get(question) is None:
-                    res[question] = []
-                res[question].append((label, self.tokenize(question, ngram=1), self.tokenize(content, ngram=1)))
+                    res[question] = FileContent()
+                res[question].add_answer_options(self.tokenize(content, ngram=1))
+                if label == '1':
+                    res[question].set_right_answer(self.tokenize(content, ngram=1))
         else:
             raise Exception(filename + " not exists\n")
 
@@ -53,7 +98,8 @@ class PreProcess:
         # 分词：精确模式
         word_list = jieba.cut(str, cut_all=False)
         # 去除停止词
-        word_list = [word for word in word_list if word not in self.stopwords and not word.isspace()]
+        # word_list = [word for word in word_list if word not in self.stopwords and not word.isspace()]
+        word_list = [word for word in word_list if not word.isspace()]
         if ngram == 1:
             return word_list
         sent_len = len(word_list)
@@ -78,10 +124,61 @@ class PreProcess:
         with open('../data/models/word2idx.pickle', 'wb') as handle:
             pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    def keyword_extraction(self, file_content):
+        """
+        extract keyword from question using named-entity recognition
+        :param file_content: FileContent()
+        :return:
+        """
+
+        # [question, question....]
+        for key, value in file_content.items():
+            seg, hidden = ltp.seg([key])
+            # ner: [[('Nh', 2, 2)]]
+            ner = ltp.ner(hidden)
+            # keywords: [('PERSON', "吴轩")],  tuple_item: ('Nh', 2, 2)
+            keywords = [seg[0][tuple_item[1]: tuple_item[2] + 1] for tuple_item
+                        in ner[0]]
+            ngram_keywords = list(map(lambda keyword: self.get_ngram(keyword, ngram=2), keywords))
+            # flatten
+            ngram_keywords = [item for keywords_list in ngram_keywords for item in keywords_list]
+            file_content[key].keywords = ngram_keywords
+
+        return file_content
+
+    def get_ngram(self, sent, ngram):
+        """
+        输入已经分完词的option, 去除停止词后，输出该option的nGram形式
+        :param sent: ['北京科技大学', '，', '简称', '北科', '或',]
+        :param ngram: ['北京科技大学','北京科技大学简称','北京科技大学简称北科']
+        :return:
+        """
+        # sent = [word for word in sent if word not in self.stopwords]
+        sent = [word for word in sent if not word.isspace()]
+        if ngram == 1:
+            return sent
+        sent_len = len(sent)
+        if sent_len < ngram:
+            return sent
+        ngram_list = ["".join(sent[index: index+k])
+                      for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
+        return ngram_list
+
 
 if __name__ == "__main__":
-    preprocess = PreProcess()
-    result = preprocess.read_tsv_file(preprocess.initial_train_data)
-    with open(preprocess.processed_train, 'w', encoding="utf-8") as fp:
-        json.dump(result, fp, indent=4, ensure_ascii=False)
+    # preprocess = PreProcess()
+    # result = preprocess.read_tsv_file(preprocess.initial_train_data)
+    # with open(preprocess.processed_train, 'w', encoding="utf-8") as fp:
+    #     json.dump(result, fp, indent=4, ensure_ascii=False)
     # preprocess.get_word2idx()
+    # with open("../data/output/fileContent.json", 'r', encoding="utf-8") as load_j:
+    #     file_content = json.load(load_j)
+    # preprocess = PreProcess()
+    # preprocess.keyword_extraction(file_content)
+
+    pre_process = PreProcess()
+    train_data = pre_process.read_tsv_file(pre_process.initial_train_data)
+    train_data = pre_process.keyword_extraction(train_data)
+    with open(pre_process.processed_train, 'w', encoding="utf-8") as fp:
+        json.dump(train_data, fp, indent=2, ensure_ascii=False, default=file_content_to_dict)
+

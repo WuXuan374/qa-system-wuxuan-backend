@@ -50,5 +50,25 @@
   "5th version(word2vec)(ngram=2)": {
     "MRR": 0.2714570858283436,
     "accuracy:": 0.3948353293413174
+  },
+  "7th version train_2016(ngram=1)(top3)": {
+    "MRR": 0.6219834419587829,
+    "accuracy:": 0.7165756561564207
+  },
+  "7th version train_2016_new(ngram=1)(top3)": {
+    "MRR": 0.6225412483119038,
+    "accuracy:": 0.7169279549057601
+  },
+  "7th version validation(ngram=1)(top3)": {
+    "MRR": 0.400763358778626,
+    "accuracy:": 0.5063613231552163
+  },
+  "7th version validation(ngram=1)(top3)(filter)": {
+    "MRR": 0.3384223918575062,
+    "accuracy:": 0.4325699745547074
+  },
+  "7th version train_2017(ngram=1)(top3)(filter)": {
+    "MRR": 0.39995009980040047,
+    "accuracy:": 0.502619760479042
   }
 }

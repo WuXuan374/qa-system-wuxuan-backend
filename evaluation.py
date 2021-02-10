@@ -42,13 +42,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/output/fileContent.json", ngram=1)
+    evaluation = Evaluation("./data/TFIDF_input/train_2016_new.json", ngram=1)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******4th version(top5) evaluation(ngram=1)")
+    print("*******7th version train_2016_new(ngram=1)(top3)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "4th version(top5)(ngram=1)": {
+        "7th version train_2016_new(ngram=1)(top3)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }
