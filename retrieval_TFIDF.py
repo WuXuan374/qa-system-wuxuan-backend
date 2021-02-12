@@ -244,7 +244,7 @@ class RetrievalTFIDF:
             concrete_answers = self.get_concrete_by_answer_type(named_entities, self.answer_types, answer_str)
             if concrete_answers:
                 print({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
-            possible_answers.append({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
+            possible_answers.append({"answer": answer_str, "first_score": sim, "concrete_answer": ", ".join(concrete_answers)})
         return possible_answers
 
 

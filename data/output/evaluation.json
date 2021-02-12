@@ -70,5 +70,17 @@
   "7th version train_2017(ngram=1)(top3)(filter)": {
     "MRR": 0.39995009980040047,
     "accuracy:": 0.502619760479042
+  },
+  "8th version train_2016_new(ngram=1)(reorder, ngrams=(1, 3))": {
+    "MRR": 0.5807057718278471,
+    "accuracy:": 0.7169279549057601
+  },
+  "8th version train_2016_new(ngram=1)(reorder, ngrams=(1, 2))": {
+    "MRR": 0.5785039046444754,
+    "accuracy:": 0.7169279549057601
+  },
+  "8th version train_2016_new(ngram=1)(reorder, optimized params)": {
+    "MRR": 0.6125594504139534,
+    "accuracy:": 0.7125242205390171
   }
 }
