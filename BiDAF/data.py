@@ -3,7 +3,7 @@ import os
 import nltk
 import argparse
 import torch
-
+import pickle
 from torchtext import data
 from torchtext.vocab import GloVe
 
@@ -73,12 +73,25 @@ class SQuAD:
         # 出于效率考虑，删除过长的context
         # len 19649
         self.train.examples = [e for e in self.train.examples if len(e.c_word) < args.context_len]
-        self.dev.examples = [e for e in self.dev.examples if len(e.c_word) < args.context_len]
+        self.dev.examples = [e for e in self.dev.examples if len(e.c_word) < 100]
 
         # 3. build vocabulary
         print('building vocab')
         self.CHAR.build_vocab(self.train, self.dev)
         self.WORD.build_vocab(self.train, self.dev, vectors=GloVe(name='6B', dim=args.word_dim))
+        if not os.path.exists('vocabs/char_vocab.pickle'):
+            print('char_vocab')
+            with open('vocabs/char_vocab.pickle', 'wb') as handle:
+                pickle.dump(self.CHAR.vocab, handle)
+        if not os.path.exists('vocabs/word_vocab.pickle'):
+            print('word_vocab')
+            with open('vocabs/word_vocab.pickle', 'wb') as handle:
+                pickle.dump(self.WORD.vocab, handle)
+        if not os.path.exists('vocabs/pretrained_vectors.pickle'):
+            print('pretrained_vectors')
+            with open('vocabs/pretrained_vectors.pickle', 'wb') as handle:
+                pickle.dump(self.WORD.vocab.vectors, handle)
+        print('finish vocab')
 
         # 4. make iterator for splits
         print('building iterators')

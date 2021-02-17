@@ -169,7 +169,6 @@ class BiDAF(nn.Module):
         # c_char: [100, 324, 100] [batch_size, seq_len, word_dim]
         # q_char: [100, 24, 100]
         c_char = char_emb_layer(batch.c_char)
-        print('c_char', c_char.size())
         q_char = char_emb_layer(batch.q_char)
 
         # 2. Word Embedding Layer
@@ -177,10 +176,8 @@ class BiDAF(nn.Module):
         # q_word: [100, 24, 100]
         # c_lens: [100] [139,186,65....]
         c_word = self.word_emb(batch.c_word[0])
-        print('c_word', c_word.size())
         q_word = self.word_emb(batch.q_word[0])
         c_lens = batch.c_word[1]
-        print('c_lens', c_lens)
         q_lens = batch.q_word[1]
 
         # Highway network
@@ -198,12 +195,10 @@ class BiDAF(nn.Module):
         # 4. Attention Flow Layer
         # g [100, 303, 800] (batch_size, , 8*hidden_size)
         g = att_flow_layer(c, q)
-        print('g', g.size())
 
         # 5. Modeling Layer
         # m [100, 303, 200] (batch_size, , 2*hidden_size)
         m = self.modeling_LSTM2((self.modeling_LSTM1((g, c_lens))[0], c_lens))[0]
-        print('m', m.size())
 
         # 6. Output Layer
         pStart, pEnd = output_layer(g, m, c_lens)

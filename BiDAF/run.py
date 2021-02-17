@@ -8,6 +8,7 @@ from torch import nn, optim
 from time import gmtime, strftime
 import os
 import json
+import pickle
 
 
 def train(args, data):
@@ -82,19 +83,26 @@ def test(model, args, data):
             loss += batch_loss.item()
 
             batch_size, c_len = pStart.size()
+
+            # # dim=1: 对每一行元素进行softmax运算，每一行的和为1
+            # ls = nn.LogSoftmax(dim=1)
+            # # mask: (batch_size, c_len, c_len)
+            # mask = (torch.ones(c_len, c_len) * float('-inf')).to(device).tril(-1).unsqueeze(0).expand(batch_size, -1, -1)
+            # # score: (batch_size, c_len, c_len)
+            # score = (ls(pStart).unsqueeze(2) + ls(pEnd).unsqueeze(1)) + mask
+            # score, s_idx = score.max(dim=1)
+            # score, e_idx = score.max(dim=1)
+            # s_idx = torch.gather(s_idx, 1, e_idx.view(-1, 1)).squeeze()
+
             # dim=1: 对每一行元素进行softmax运算，每一行的和为1
-            ls = nn.LogSoftmax(dim=1)
-            # mask: (batch_size, c_len, c_len)
-            mask = (torch.ones(c_len, c_len) * float('-inf')).to(device).tril(-1).unsqueeze(0).expand(batch_size, -1, -1)
-            # score: (batch_size, c_len, c_len)
-            score = (ls(pStart).unsqueeze(2) + ls(pEnd).unsqueeze(1)) + mask
-            score, s_idx = score.max(dim=1)
-            score, e_idx = score.max(dim=1)
-            s_idx = torch.gather(s_idx, 1, e_idx.view(-1, 1)).squeeze()
+            softmax = nn.Softmax(dim=1)
+            # argmax(dim=1): 按行取最大值的下标
+            start_idx = torch.argmax(softmax(pStart), dim=1)
+            end_idx = torch.argmax(softmax(pEnd), dim=1)
 
             for i in range(batch_size):
                 id = batch.id[i]
-                answer = batch.c_word[0][i][s_idx[i]:e_idx[i] + 1]
+                answer = batch.c_word[0][i][start_idx[i]:end_idx[i] + 1]
                 answer = ' '.join([data.WORD.vocab.itos[idx] for idx in answer])
                 answers[id] = answer
     with open(args.prediction_file, 'w', encoding='utf-8') as f:
@@ -102,6 +110,12 @@ def test(model, args, data):
 
     results = evaluation.main(args)
     return loss, results['EM'], results['F1']
+
+
+def run_with_model(model, question, context, word_vocab, char_vocab):
+    data = {}
+    print(char_vocab)
+    print(word_vocab)
 
 
 if __name__ == "__main__":
@@ -123,19 +137,28 @@ if __name__ == "__main__":
     parser.add_argument('--context_len', default=50, type=int)
 
     args = parser.parse_args()
+    #
+    # print('loading SQuAD data...')
+    # data = SQuAD(args)
+    with open('vocabs/char_vocab.pickle', 'rb') as handle:
+        char_vocab = pickle.load(handle)
+    with open('vocabs/pretrained_vectors.pickle', 'rb') as handle:
+        pretrained_vectors = pickle.load(handle)
 
-    print('loading SQuAD data...')
-    data = SQuAD(args)
-    setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
+    # setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
+    setattr(args, 'char_vocab_size', len(char_vocab))
     setattr(args, 'model_time', strftime('%m_%d_%H_%M_%S', gmtime()))
     setattr(args, 'prediction_file', 'outputs/predictions_{}'.format(strftime('%m_%d_%H_%M_%S', gmtime())))
     setattr(args, 'dataset_file', 'inputs/dev-v1.1.json')
-
-    model = BiDAF(args, data.WORD.vocab.vectors)
-
-    print('training start')
-    model = train(args, data)
-    if not os.path.exists('saved_models'):
-        os.makedirs('saved_models')
-    torch.save(model.state_dict(), f'saved_models/BiDAF_{args.model_time}.pt')
+    #
+    # model = BiDAF(args, data.WORD.vocab.vectors)
+    model = BiDAF(args, pretrained_vectors)
+    #
+    # print('training start')
+    # model = train(args, data)
+    # if not os.path.exists('saved_models'):
+    #     os.makedirs('saved_models')
+    # torch.save(model.state_dict(), f'saved_models/BiDAF_{args.model_time}.pt')
+    model.load_state_dict(torch.load('saved_models/BiDAF_02_17_14_59_12.pt'))
+    model.eval()
 
