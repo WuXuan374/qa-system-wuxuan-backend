@@ -8,3 +8,9 @@ data/TFIDF_input
 flask-backend/data
 __pycache__
 Logistic_Regression
+WikiQACodePackage
+BiDAF/.vector_cache
+BiDAF/inputs
+BiDAF/logs
+BiDAF/outputs
+BiDAF/saved_models
