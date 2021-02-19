@@ -166,15 +166,25 @@ class BiDAF(nn.Module):
             return pStart, pEnd
 
         # 1. Character Embedding Layer
+        # before embedding: c_char [batch_size, 49, 22] q_char [batch_size, 30, 16]
         # c_char: [100, 324, 100] [batch_size, seq_len, word_dim]
         # q_char: [100, 24, 100]
+
         c_char = char_emb_layer(batch.c_char)
         q_char = char_emb_layer(batch.q_char)
 
         # 2. Word Embedding Layer
+        # before embedding:
+        # c_word[0]: [batch_size, 49]
+        # c_word[1]: [batch_size]
+        # q_word[0]: [batch_size, 30]
+        # q_word[1]: [batch_size]
+
         # c_word: [100, 324, 100]
         # q_word: [100, 24, 100]
         # c_lens: [100] [139,186,65....]
+        print('c_word', batch.c_word[0].size(), batch.c_word[1].size(), batch.c_word)
+        print('q_word', batch.q_word[0].size(), batch.q_word[1].size(), batch.c_word)
         c_word = self.word_emb(batch.c_word[0])
         q_word = self.word_emb(batch.q_word[0])
         c_lens = batch.c_word[1]

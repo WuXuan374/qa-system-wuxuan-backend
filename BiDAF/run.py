@@ -9,6 +9,8 @@ from time import gmtime, strftime
 import os
 import json
 import pickle
+import nltk
+from torchtext import data
 
 
 def train(args, data):
@@ -112,10 +114,41 @@ def test(model, args, data):
     return loss, results['EM'], results['F1']
 
 
-def run_with_model(model, question, context, word_vocab, char_vocab):
-    data = {}
-    print(char_vocab)
-    print(word_vocab)
+def word_tokenize(str):
+    return [token.replace("''", '"').replace("``", '"')
+            for token in nltk.word_tokenize(str)]
+
+
+def run_with_model(model, questions, contexts, word_vocab, char_vocab):
+    """
+    :param model:
+    :param questions: list of question(str)
+    :param contexts: list of context(str)
+    :param word_vocab:
+    :param char_vocab:
+    :return:
+    """
+    with torch.no_grad():
+        question_tokens = [[word_vocab[token] for token in word_tokenize(question)] for question in questions]
+        context_tokens = [[word_vocab[token] for token in word_tokenize(context)] for context in contexts]
+        q_word = (torch.tensor(question_tokens), torch.tensor(list(map(lambda question: len(question), question_tokens))))
+        print(q_word[0].size(), q_word)
+        c_word = (torch.tensor(context_tokens), torch.tensor(list(map(lambda context: len(context), context_tokens))))
+        print(c_word[0].size(), c_word)
+        question_char_len = max([len(token) for question in questions for token in word_tokenize(question)])
+        context_char_len = max([len(token) for context in contexts for token in word_tokenize(context)])
+        # + [0] *
+        question_chars = [[[char_vocab[char] for char in token] + [0] * (question_char_len - len(token)) for token in word_tokenize(question)]
+                          for question in questions]
+        context_chars = [[[char_vocab[char] for char in token] + [0] * (context_char_len - len(token)) for token in word_tokenize(context)]
+                         for context in contexts]
+        print(question_chars)
+        print(context_chars)
+        q_char = torch.tensor(question_chars)
+        c_char = torch.tensor(context_chars)
+        print(q_char.size(), q_char)
+        print(c_char.size(), c_char)
+
 
 
 if __name__ == "__main__":
@@ -144,6 +177,8 @@ if __name__ == "__main__":
         char_vocab = pickle.load(handle)
     with open('vocabs/pretrained_vectors.pickle', 'rb') as handle:
         pretrained_vectors = pickle.load(handle)
+    with open('vocabs/word_vocab.pickle', 'rb') as handle:
+        word_vocab = pickle.load(handle)
 
     # setattr(args, 'char_vocab_size', len(data.CHAR.vocab))
     setattr(args, 'char_vocab_size', len(char_vocab))
@@ -160,5 +195,11 @@ if __name__ == "__main__":
     #     os.makedirs('saved_models')
     # torch.save(model.state_dict(), f'saved_models/BiDAF_{args.model_time}.pt')
     model.load_state_dict(torch.load('saved_models/BiDAF_02_17_14_59_12.pt'))
+    questions = ["Where did Super Bowl 50 take place?", "Which NFL team won Super Bowl 50?"]
+    contexts = ["Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50.",
+                "Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50."]
+    run_with_model(model, questions=questions,
+                   contexts=contexts,
+                   word_vocab=word_vocab, char_vocab=char_vocab)
     model.eval()
 
