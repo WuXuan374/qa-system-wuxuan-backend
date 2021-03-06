@@ -137,20 +137,13 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab):
     :param char_vocab:
     :return:
     """
-    TEXT = data.Field(batch_first=True)
-    dict_fields = {'c_word': ('c_word', TEXT),
-                   'c_char': ('c_char', TEXT),
-                   'q_word': ('q_word', TEXT),
-                   'q_char': ('q_char', TEXT)}
-    list_fields = [('c_word', TEXT), ('c_char', TEXT), ('q_word', TEXT), ('q_char', TEXT)]
 
     with torch.no_grad():
-        test_examples = {}
         question_tokens = [[word_vocab[token] for token in word_tokenize(question)] for question in questions]
         context_tokens = [[word_vocab[token] for token in word_tokenize(context)] for context in contexts]
-        test_examples['q_word'] = (torch.tensor(question_tokens), torch.tensor(list(map(lambda question: len(question), question_tokens))))
+        q_word = (torch.tensor(question_tokens), torch.tensor(list(map(lambda question: len(question), question_tokens))))
         # q_word[0]: [batch_size, 8], q_word[1]: [batch_size]
-        test_examples['c_word'] = (torch.tensor(context_tokens), torch.tensor(list(map(lambda context: len(context), context_tokens))))
+        c_word = (torch.tensor(context_tokens), torch.tensor(list(map(lambda context: len(context), context_tokens))))
         question_char_len = max([len(token) for question in questions for token in word_tokenize(question)])
         context_char_len = max([len(token) for context in contexts for token in word_tokenize(context)])
         question_chars = [[[char_vocab[char] for char in token] + [0] * (question_char_len - len(token)) for token in word_tokenize(question)]
@@ -158,12 +151,21 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab):
         context_chars = [[[char_vocab[char] for char in token] + [0] * (context_char_len - len(token)) for token in word_tokenize(context)]
                          for context in contexts]
         # q_char: [batch_size, 8, 5]  c_char: [batch_size, 147, 11]
-        test_examples['q_char'] = torch.tensor(question_chars)
-        test_examples['c_char'] = torch.tensor(context_chars)
-        test_examples = data.Example.fromdict(test_examples, dict_fields)
-        test_dataset = data.Dataset(examples=test_examples, fields=list_fields)
-        test_iter = data.Iterator(test_dataset, batch_size=2)
-        print(next(iter(test_iter)))
+        q_char = torch.tensor(question_chars)
+        c_char = torch.tensor(context_chars)
+        test_examples = Testcase(c_char, q_char, c_word, q_word)
+        p_start, p_end = model(test_examples)
+        softmax = nn.Softmax(dim=1)
+        start_idx = torch.argmax(softmax(p_start), dim=1)
+        end_idx = torch.argmax(softmax(p_end), dim=1)
+        # c_char.size(0): 测试用例的数量
+        for i in range(c_char.size(0)):
+            answer = (word_tokenize(contexts[i]))[start_idx[i]: end_idx[i]+1]
+            print(answer)
+        # test_examples = data.Example.fromdict(test_examples, dict_fields)
+        # test_dataset = data.Dataset(examples=test_examples, fields=list_fields)
+        # test_iter = data.Iterator(test_dataset, batch_size=2)
+        # print(next(iter(test_iter)))
 
 
 if __name__ == "__main__":
