@@ -24,6 +24,10 @@ class Evaluation:
         accuracy_sum = 0
         for question_str in self.content.keys():
             right_answer = self.content[question_str]["right answer"]
+            if (right_answer == ""):
+                mrr_sum += 1
+                accuracy_sum += 1
+                continue
             predicted_answers = self.reader.get_question_answer(
                 question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt")
             if not predicted_answers:
@@ -42,13 +46,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/TFIDF_input/train_2016_new.json", ngram=1)
+    evaluation = Evaluation("./data/TFIDF_input/WikiQA_train.json", ngram=1)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******8th version train_2016_new(ngram=1)(reorder, optimized params)******")
+    print("*******8th version WikiQA_train(ngram=1)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "8th version train_2016_new(ngram=1)(reorder, optimized params)": {
+        "8th version WikiQA_train(ngram=1)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

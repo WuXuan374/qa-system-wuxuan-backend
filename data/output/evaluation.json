@@ -82,5 +82,13 @@
   "8th version train_2016_new(ngram=1)(reorder, optimized params)": {
     "MRR": 0.6125594504139534,
     "accuracy:": 0.7125242205390171
+  },
+  "8th version WikiQA_train(ngram=1)(reorder, optimized params)": {
+    "MRR": 0.15422768068020778,
+    "accuracy:": 0.21020311761927257
+  },
+  "8th version WikiQA_train(ngram=1)(reorder, 如果无正确答案，直接认为答案正确"): {
+    "MRR": 0.7423240434577226,
+    "accuracy:": 0.798299480396788
   }
 }

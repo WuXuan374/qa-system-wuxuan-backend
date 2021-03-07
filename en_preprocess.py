@@ -1,12 +1,8 @@
 import os
 import csv
-import jieba
 import json
-from collections import Counter
-import pickle
 import nltk
-from ltp import LTP
-ltp = LTP()
+
 
 
 class FileContent:
