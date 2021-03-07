@@ -87,7 +87,7 @@ class BiDAF(nn.Module):
             x = x.view(-1, self.args.char_dim, x.size(3)).unsqueeze(1)
             # (batch_size * seq_len, char_channel_size, 1, conv_len) ->
             # (batch_size * seq_len, char_channel_size, conv_len)
-            x = self.char_conv(x).squeeze()
+            x = self.char_conv(x).squeeze(2)
             # (batch_size * seq_len, char_channel_size, 1) ->
             # (batch_size * seq_len, char_channel_size)
             x = F.max_pool1d(x, x.size(2)).squeeze()
@@ -183,8 +183,6 @@ class BiDAF(nn.Module):
         # c_word: [100, 324, 100]
         # q_word: [100, 24, 100]
         # c_lens: [100] [139,186,65....]
-        print('c_word', batch.c_word[0].size(), batch.c_word[1].size(), batch.c_word)
-        print('q_word', batch.q_word[0].size(), batch.q_word[1].size(), batch.c_word)
         c_word = self.word_emb(batch.c_word[0])
         q_word = self.word_emb(batch.q_word[0])
         c_lens = batch.c_word[1]

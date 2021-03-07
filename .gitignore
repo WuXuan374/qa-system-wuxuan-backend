@@ -2,6 +2,7 @@ venv
 data/ChineseDBQA
 .idea
 data/word2vec
+data/wikiQA
 data/input
 data/models
 data/TFIDF_input

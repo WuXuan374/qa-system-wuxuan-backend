@@ -178,16 +178,16 @@ if __name__ == "__main__":
     parser.add_argument('--char_dim', default=8, type=int)
     parser.add_argument('--char_channel_size', default=100, type=int)
     parser.add_argument('--char_channel_width', default=5, type=int)
-    parser.add_argument('--hidden-size', default=100, type=int)
+    parser.add_argument('--hidden_size', default=100, type=int)
     parser.add_argument('--dropout_rate', default=0.2, type=float)
     parser.add_argument('--learning_rate', default=0.5, type=int)
     parser.add_argument('--epoch', default=1, type=int)
     parser.add_argument('--print_freq', default=50, type=int)
     parser.add_argument('--gpu', default=0, type=int)
-    parser.add_argument('--context_len', default=50, type=int)
+    # context_len参数必须与训练的模型保持一致
+    parser.add_argument('--context_len', default=150, type=int)
 
     args = parser.parse_args()
-    #
     # print('loading SQuAD data...')
     # data = SQuAD(args)
     with open('vocabs/char_vocab.pickle', 'rb') as handle:
@@ -204,19 +204,19 @@ if __name__ == "__main__":
     setattr(args, 'dataset_file', 'inputs/dev-v1.1.json')
     #
     # model = BiDAF(args, data.WORD.vocab.vectors)
-    model = BiDAF(args, pretrained_vectors)
+    # model = BiDAF(args, pretrained_vectors)
     #
     # print('training start')
     # model = train(args, data)
     # if not os.path.exists('saved_models'):
     #     os.makedirs('saved_models')
     # torch.save(model.state_dict(), f'saved_models/BiDAF_{args.model_time}.pt')
-    model.load_state_dict(torch.load('saved_models/BiDAF_02_17_14_59_12.pt'))
-    questions = ["Where did Super Bowl 50 take place?", "Which NFL team won Super Bowl 50?"]
-    contexts = ["Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50.",
-                "Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50."]
-    run_with_model(model, questions=questions,
-                   contexts=contexts,
-                   word_vocab=word_vocab, char_vocab=char_vocab)
-    model.eval()
+    # model.load_state_dict(torch.load('saved_models/BiDAF_03_07_08_37_36.pt'))
+    # questions = ["Where did Super Bowl 50 take place?", "Which NFL team won Super Bowl 50?"]
+    # contexts = ["Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50.",
+    #             "Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50."]
+    # run_with_model(model, questions=questions,
+    #                contexts=contexts,
+    #                word_vocab=word_vocab, char_vocab=char_vocab)
+    # model.eval()
 

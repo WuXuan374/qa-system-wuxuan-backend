@@ -73,7 +73,7 @@ class SQuAD:
         # 出于效率考虑，删除过长的context
         # len 19649
         self.train.examples = [e for e in self.train.examples if len(e.c_word) < args.context_len]
-        self.dev.examples = [e for e in self.dev.examples if len(e.c_word) < 100]
+        self.dev.examples = [e for e in self.dev.examples if len(e.c_word) < args.context_len]
 
         # 3. build vocabulary
         print('building vocab')
