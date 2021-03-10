@@ -23,8 +23,7 @@ class Testcase:
 
 
 def train(args, data):
-    device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
-    model = BiDAF(args, data.WORD.vocab.vectors).to(device)
+    model = BiDAF(args, data.WORD.vocab.vectors)
     # print('**********before*********')
     # for name, param in model.named_parameters():
     #     if param.requires_grad:
@@ -33,6 +32,13 @@ def train(args, data):
     parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
     # An Adaptive Learning Rate Method
     optimizer = optim.Adadelta(parameters, lr=args.learning_rate)
+    loss, last_epoch = 0, -1
+    # 增加从 checkpoint 继续训练功能
+    if args.resume:
+        checkpoint = torch.load(args.checkpoint)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        loss = checkpoint['loss']
     criterion = nn.CrossEntropyLoss()
     # 记录模型和相关测试指标，并可视化
     writer = SummaryWriter(log_dir='logs/' + args.model_time)
@@ -40,7 +46,6 @@ def train(args, data):
     model.train()
 
     iterator = data.train_iter
-    loss, last_epoch = 0, -1
 
     for i, batch in enumerate(iterator):
         current_epoch = int(iterator.epoch)
@@ -48,6 +53,12 @@ def train(args, data):
             break
         if current_epoch > last_epoch:
             print('epoch:', current_epoch+1)
+            # 保存checkpoint
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+            }, f'./checkpoints/epoch_{current_epoch}.pt')
         print('batch_index', i)
         last_epoch = current_epoch
 
@@ -72,16 +83,14 @@ def train(args, data):
             writer.add_scalar('f1/dev', dev_f1, c)
             print(f'train loss:{loss: .3f} / dev loss: {dev_loss: .3f}'
                   f' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
-
-        loss = 0
-        model.train()
+            loss = 0
+            model.train()
 
     writer.close()
     return model
 
 
 def test(model, args, data):
-    device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     loss = 0
     answers = dict()
@@ -186,10 +195,11 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', default=0, type=int)
     # context_len参数必须与训练的模型保持一致
     parser.add_argument('--context_len', default=150, type=int)
+    parser.add_argument('--resume', default=False, type=bool)
 
     args = parser.parse_args()
     # print('loading SQuAD data...')
-    # data = SQuAD(args)
+    data = SQuAD(args)
     with open('vocabs/char_vocab.pickle', 'rb') as handle:
         char_vocab = pickle.load(handle)
     with open('vocabs/pretrained_vectors.pickle', 'rb') as handle:
@@ -202,6 +212,7 @@ if __name__ == "__main__":
     setattr(args, 'model_time', strftime('%m_%d_%H_%M_%S', gmtime()))
     setattr(args, 'prediction_file', 'outputs/predictions_{}'.format(strftime('%m_%d_%H_%M_%S', gmtime())))
     setattr(args, 'dataset_file', 'inputs/dev-v1.1.json')
+    setattr(args, 'checkpoint', './checkPoints/0308/epoch_2.pt')
     #
     # model = BiDAF(args, data.WORD.vocab.vectors)
     # model = BiDAF(args, pretrained_vectors)
@@ -219,4 +230,21 @@ if __name__ == "__main__":
     #                contexts=contexts,
     #                word_vocab=word_vocab, char_vocab=char_vocab)
     # model.eval()
+
+    # 从checkPoints 中读取model, 随后对model进行测试
+    checkPoint = torch.load(args.checkpoint)
+    model = BiDAF(args, pretrained_vectors)
+    model.load_state_dict(checkPoint['model_state_dict'])
+    dev_loss, dev_exact, dev_f1 = test(model, args, data)
+    print(f'dev loss: {dev_loss: .3f}'
+          f' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
+    result = {
+        "context_len=150, epoch=2, 0310, unanswered as False": {
+            "Dev loss": dev_loss,
+            "Dev exact": dev_exact,
+            "Dev F1": dev_f1,
+        }
+    }
+    with open('./outputs/evaluation.json', 'a', encoding="utf-8") as fp:
+        json.dump(result, fp, indent=2, ensure_ascii=False)
 
