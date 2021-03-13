@@ -212,7 +212,7 @@ if __name__ == "__main__":
     setattr(args, 'model_time', strftime('%m_%d_%H_%M_%S', gmtime()))
     setattr(args, 'prediction_file', 'outputs/predictions_{}'.format(strftime('%m_%d_%H_%M_%S', gmtime())))
     setattr(args, 'dataset_file', 'inputs/dev-v1.1.json')
-    setattr(args, 'checkpoint', './checkPoints/0308/epoch_2.pt')
+    setattr(args, 'checkpoint', './checkPoints/0308/epoch_3.pt')
     #
     # model = BiDAF(args, data.WORD.vocab.vectors)
     # model = BiDAF(args, pretrained_vectors)
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     print(f'dev loss: {dev_loss: .3f}'
           f' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
     result = {
-        "context_len=150, epoch=2, 0310, unanswered as False": {
+        "context_len=150, epoch=3, 0310": {
             "Dev loss": dev_loss,
             "Dev exact": dev_exact,
             "Dev F1": dev_f1,
