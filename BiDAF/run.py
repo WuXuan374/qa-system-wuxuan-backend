@@ -212,7 +212,7 @@ if __name__ == "__main__":
     setattr(args, 'model_time', strftime('%m_%d_%H_%M_%S', gmtime()))
     setattr(args, 'prediction_file', 'outputs/predictions_{}'.format(strftime('%m_%d_%H_%M_%S', gmtime())))
     setattr(args, 'dataset_file', 'inputs/dev-v1.1.json')
-    setattr(args, 'checkpoint', './checkPoints/0308/epoch_3.pt')
+    setattr(args, 'checkpoint', './checkPoints/0308/epoch_4.pt')
     #
     # model = BiDAF(args, data.WORD.vocab.vectors)
     # model = BiDAF(args, pretrained_vectors)
