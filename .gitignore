@@ -6,6 +6,7 @@ data/wikiQA
 data/input
 data/models
 data/TFIDF_input
+data/TrecQA
 flask-backend/data
 __pycache__
 Logistic_Regression

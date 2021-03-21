@@ -24,7 +24,7 @@ class Evaluation:
         accuracy_sum = 0
         for question_str in self.content.keys():
             right_answer = self.content[question_str]["right answer"]
-            if (right_answer == ""):
+            if right_answer == "":
                 mrr_sum += 1
                 accuracy_sum += 1
                 continue
@@ -33,11 +33,11 @@ class Evaluation:
             if not predicted_answers:
                 continue
             for index in range(len(predicted_answers)):
-                if ("".join(right_answer)) == (predicted_answers[index]["answer"]):
+                if (" ".join(right_answer)) == (predicted_answers[index]["answer"]):
                     mrr_sum += 1/(index+1)
                     accuracy_sum += 1
                     print("question", question_str)
-                    print("right answer" + "".join(right_answer).strip())
+                    print("right answer" + " ".join(right_answer).strip())
                     print(predicted_answers[index])
                     break
         mrr = (1/question_num) * mrr_sum
@@ -46,13 +46,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/TFIDF_input/WikiQA_train.json", ngram=1)
+    evaluation = Evaluation("./data/TFIDF_input/TrecQA_train.json", ngram=2)
     mrr, accuracy = evaluation.compute_metrics()
-    print("*******8th version WikiQA_train(ngram=1)******")
+    print("*******9th version TrecQA_train(ngram=1)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "8th version WikiQA_train(ngram=1)": {
+        "9th version TrecQA_train(ngram=1)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

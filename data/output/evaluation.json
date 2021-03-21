@@ -87,8 +87,16 @@
     "MRR": 0.15422768068020778,
     "accuracy:": 0.21020311761927257
   },
-  "8th version WikiQA_train(ngram=1)(reorder, 如果无正确答案，直接认为答案正确"): {
+  "8th version WikiQA_train(ngram=1)(reorder, 如果无正确答案，直接认为答案正确)": {
     "MRR": 0.7423240434577226,
     "accuracy:": 0.798299480396788
+  },
+  "9th version TrecQA_train(ngram=1)": {
+    "MRR": 0.28579190437381113,
+    "accuracy:": 0.3920130399348003
+  },
+  "9th version TrecQA_train(ngram=2)": {
+    "MRR": 0.3147242597120346,
+    "accuracy:": 0.4213528932355338
   }
 }
