@@ -13,7 +13,7 @@ app = Flask(__name__)
 CORS(app)
 
 # read file contentcontent
-sourcefile = './data/train_2016_new.json'
+sourcefile = './data/TrecQA_train.json'
 if os.path.isfile(sourcefile):
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
@@ -23,7 +23,7 @@ else:
 # api configuration
 apis = {
     "answers": "/api/answers/",
-    "keywords": "/api/keywords",
+    "hints": "/api/hints",
 }
 
 
@@ -85,18 +85,13 @@ def get_answers():
         return jsonify({'answers': sorted_answers})
 
 
-@app.route(apis["keywords"], methods=['GET'])
+@app.route(apis["hints"], methods=['GET'])
 def get_keywords():
     """
-    从语料库中提取关键词，返回给前端。用户可以根据关键词提示来进行提问
+    将语料库中的问题返回给前端，作为用户输入问题时的提示信息
     """
-    keywords = []
-    for question in content.keys():
-        for keyword in content[question]["keywords"]:
-            # 去重
-            if keyword not in keywords:
-                keywords.append(keyword)
-    return jsonify({'keywords': keywords})
+    hints = list(content.keys())
+    return jsonify({'hints': hints})
 
 
 if __name__ == '__main__':
