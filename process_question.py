@@ -1,41 +1,46 @@
 from ltp import LTP
 import os
 import json
-import numpy as np
+import nltk
 import gensim
+from nltk.corpus import stopwords
 ltp = LTP()
 
 
-def word2vec(tokens, embeddings):
-    """
-    输入词链表，生成对应的word embedding vector
-    :param tokens: list, e.g, ["浙江大学", "人文学院"]
-    :param embeddings: gensim 读取预训练词向量的结果
-    :return: word_vec: list of array, e.g. [[0.1,0.3...,0.5]], 每一个数组是300维的
-    """
-    dim = embeddings['word'].size
-    word_vec = []
-    for word in tokens:
-        if word in embeddings:
-            word_vec.append(embeddings[word])
-        else:
-            word_vec.append(np.random.uniform(-0.25, 0.25, dim))
-    return np.array(word_vec)
+# def word2vec(tokens, embeddings):
+#     """
+#     输入词链表，生成对应的word embedding vector
+#     :param tokens: list, e.g, ["浙江大学", "人文学院"]
+#     :param embeddings: gensim 读取预训练词向量的结果
+#     :return: word_vec: list of array, e.g. [[0.1,0.3...,0.5]], 每一个数组是300维的
+#     """
+#     dim = embeddings['word'].size
+#     word_vec = []
+#     for word in tokens:
+#         if word in embeddings:
+#             word_vec.append(embeddings[word])
+#         else:
+#             word_vec.append(np.random.uniform(-0.25, 0.25, dim))
+#     return np.array(word_vec)
 
 
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, ngram=1):
-        if os.path.isfile(stop_word_path):
-            fp = open(stop_word_path, 'r', encoding='utf-8')
-            self.stopwords = [line.strip('\n') for line in fp.readlines()]
-        else:
-            raise Exception("stop words file not exists!\n")
+    def __init__(self, question, stop_word_path, ngram=1, lang="zh"):
+        self.lang = lang
         self.question = question
-        # self.hidden是LTP产生的一个数组，后面的词性标注会用到
-        self.tokenized_question, self.hidden = self.tokenize(question)
+        if self.lang == "en":
+            self.stopwords = stopwords.words("english")
+            self.tokenized_question = nltk.word_tokenize(question)
+        elif self.lang == "zh":
+            if os.path.isfile(stop_word_path):
+                fp = open(stop_word_path, 'r', encoding='utf-8')
+                self.stopwords = [line.strip('\n') for line in fp.readlines()]
+            else:
+                raise Exception("stop words file not exists!\n")
+            # self.hidden是LTP产生的一个数组，后面的词性标注会用到
+            self.tokenized_question, self.hidden = self.tokenize(question)
         # 去除停止词，生成ngram. 参数为1时，直接采用tokenized_question
         self.ngram_question = self.get_ngram(self.tokenized_question, ngram=ngram)
-        # self.answer_type = self.determine_answer_type()
         self.question_vector = self.get_vector(self.ngram_question)
         self.answer_types = self.determine_answer_type()
         # self.question_embedding = word2vec(self.ngram_question, embeddings)
@@ -100,6 +105,9 @@ class ProcessQuestion:
         :return: answer_type: list, e.g. ["PERSON", "LOCATION”]
         """
         answer_type = []
+        # 尚待开发
+        if self.lang == "en":
+            return answer_type
         for token in self.ngram_question:
             # 这里通过人为设定规则，判断疑问词和答案类型的关系
             # 进一步改进可以通过词性标注 --> 找出疑问代词 --> 确定具体类型

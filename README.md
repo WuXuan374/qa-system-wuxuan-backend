@@ -1,7 +1,5 @@
 # qa-system-wuxuan-backend
-## version 8 
+## version 10
 ### 重要改动
-- 在初步检索之后，进行重排序
-- 重排序基于ngram-matching, 见论文P32
-- alpha1* 初步检索 + alpha2 * 得分重排序
-- alpha1 和 alpha2 通过Logistic Regression得到 
+- Sentence Retrieval 改用英文的TrecQA 数据集
+- 希望Sentence Retrieval 相关的函数都要支持传入 `lang` 参数, 根据不同语言的特性进行分词等工作

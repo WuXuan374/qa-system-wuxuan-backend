@@ -14,7 +14,7 @@ class ReadDocumentContent:
             self.content = json.load(load_j)
         self.ngram = ngram
 
-    def get_question_answer(self, question_str, answer_options, stop_word_path):
+    def get_question_answer(self, question_str, answer_options, stop_word_path, lang="zh"):
         """
         input a question string, and get top possible answers
         :param question_str: string, e.g. "重庆大学建筑学部坐落在哪里？"

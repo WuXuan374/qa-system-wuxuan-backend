@@ -4,12 +4,10 @@ import json
 import nltk
 
 
-
 class FileContent:
     def __init__(self):
         self.answer_options = []
         self.right_answer = ""
-        self.keywords = []
 
     def add_answer_options(self, option):
         self.answer_options.append(option)
@@ -20,7 +18,6 @@ class FileContent:
 
 def file_content_to_dict(f):
     return {
-        'keywords': f.keywords,
         'right answer': f.right_answer,
         'options': f.answer_options,
     }
@@ -29,10 +26,10 @@ def file_content_to_dict(f):
 class PreProcess:
     def __init__(self):
         # 文件路径
-        self.initial_train_data = './data/wikiQA/WikiQA-train.tsv'
+        self.initial_train_data = './data/TrecQA/train.tsv'
         self.initial_validation_data = '../data/ChineseDBQA/nlpcc2017.dbqa.dev'
         self.initial_test_data = '../data/ChineseDBQA/nlpcc2017.dbqa.test'
-        self.processed_train = './data/TFIDF_input/WikiQA_train.json'
+        self.processed_train = './data/TFIDF_input/TrecQA_train.json'
         self.processed_val = '../data/TFIDF_input/validation.json'
         self.processed_test = '../data/input/test.json'
 
@@ -46,12 +43,11 @@ class PreProcess:
             tsv_file = open(filename, 'r', encoding="utf-8")
             read_tsv = csv.reader(tsv_file, delimiter="\t")
             for row in read_tsv:
-                _, question, _, keywords, _, content, label = row
-                print(question, keywords, content, label)
+                label, question, content = row
+                print(question, content, label)
                 if res.get(question) is None:
                     res[question] = FileContent()
                 res[question].add_answer_options(self.tokenize(content, ngram=1))
-                res[question].keywords = keywords
                 if label == '1':
                     res[question].set_right_answer(self.tokenize(content, ngram=1))
         else:
@@ -66,7 +62,7 @@ class PreProcess:
         :param ngram: if ngram=2, generates 1-gram and 2-gram
         :return: word_list: list
         """
-        word_list = [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(str)]
+        word_list = nltk.word_tokenize(str)
 
         if ngram == 1:
             return word_list
