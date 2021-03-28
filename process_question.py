@@ -95,7 +95,7 @@ class ProcessQuestion:
         question_len = len(tokenized_question)
         if question_len < ngram:
             return tokenized_question
-        ngram_list = ["".join(tokenized_question[index: index+k])
+        ngram_list = [("" if self.lang == "zh" else " ").join(tokenized_question[index: index+k])
                       for k in range(1, ngram + 1) for index in range(0, question_len - ngram + 1)]
         return ngram_list
 

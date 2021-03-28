@@ -3,12 +3,13 @@ import json
 import math
 from process_question import ProcessQuestion
 from extractor import extract_date
+from nltk.corpus import stopwords
 from ltp import LTP
 ltp = LTP()
 
 
 class RetrievalTFIDF:
-    def __init__(self, options, answer_types, ngram=1):
+    def __init__(self, options, answer_types, ngram=1, lang="zh"):
         self.idf = {}  # dict
         self.optionsInfo = {}
         # 答案的预期类型，根据问题得到的
@@ -16,11 +17,13 @@ class RetrievalTFIDF:
         # 首先根据问句类型，对候选答案进行一次筛选
         # self.options = list(filter(lambda option: self.filter_options_by_answer_type(self.answer_types, option), options))
         self.options = options
-        if os.path.isfile('./data/stopwords.txt'):
+        self.lang = lang
+        if self.lang == "zh" and os.path.isfile('./data/stopwords.txt'):
             fp = open('./data/stopwords.txt', 'r', encoding='utf-8')
             self.stopwords = [line.strip('\n') for line in fp.readlines()]
-        else:
-            raise Exception("stop words file not exists!\n")
+        elif self.lang == "en":
+            self.stopwords = stopwords.words("english")
+
         self.ngram_options = list(map(lambda option: self.get_ngram(option, ngram=ngram), self.options))
         self.computeTFIDF()
 
@@ -132,7 +135,7 @@ class RetrievalTFIDF:
         length = len(top_options)
         if length == 0:
             return [None]
-        return sorted(top_options, key=lambda x: x[1], reverse=True)[:3 if length >= 3 else length]
+        return sorted(top_options, key=lambda x: x[1], reverse=True)[:5]
 
     def filter_options_by_answer_type(self, answer_types, option):
         """
@@ -173,7 +176,7 @@ class RetrievalTFIDF:
         sent_len = len(sent)
         if sent_len < ngram:
             return sent
-        ngram_list = ["".join(sent[index: index+k])
+        ngram_list = [("" if self.lang == "zh" else " ").join(sent[index: index+k])
                       for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
         return ngram_list
 
@@ -239,12 +242,19 @@ class RetrievalTFIDF:
             return possible_answers
         for index, sim in answers:
             # possible_answers.append(("".join(self.options[index]), sim))
-            answer_str = "".join(self.options[index])
-            named_entities = self.get_named_entity(answer_str)
-            concrete_answers = self.get_concrete_by_answer_type(named_entities, self.answer_types, answer_str)
-            if concrete_answers:
-                print({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
-            possible_answers.append({"answer": answer_str, "first_score": sim, "concrete_answer": ", ".join(concrete_answers)})
+            answer_str = ("" if self.lang == "zh" else " ").join(self.options[index])
+            if self.lang == "zh":
+                named_entities = self.get_named_entity(answer_str)
+                concrete_answers = self.get_concrete_by_answer_type(named_entities, self.answer_types, answer_str)
+                if concrete_answers:
+                    print({"answer": answer_str, "score": sim, "concrete_answer": ", ".join(concrete_answers)})
+                possible_answers.append(
+                    {"answer": answer_str, "first_score": sim, "concrete_answer": ", ".join(concrete_answers)})
+
+            else:
+                print({"answer": answer_str, "score": sim})
+                possible_answers.append({"answer": answer_str, "first_score": sim})
+
         return possible_answers
 
 

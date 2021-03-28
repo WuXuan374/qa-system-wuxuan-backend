@@ -12,7 +12,7 @@ class Evaluation:
         self.reader = ReadDocumentContent(self.source_file, self.ngram)
         self.content = self.reader.content
 
-    def compute_metrics(self):
+    def compute_metrics(self, lang="zh"):
         """
         compute evaluation metrics: MRR and Accuracy
         :return: mrr(num)
@@ -29,7 +29,7 @@ class Evaluation:
                 accuracy_sum += 1
                 continue
             predicted_answers = self.reader.get_question_answer(
-                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt")
+                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt", lang=lang)
             if not predicted_answers:
                 continue
             for index in range(len(predicted_answers)):
@@ -46,13 +46,13 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/TFIDF_input/TrecQA_train.json", ngram=2)
-    mrr, accuracy = evaluation.compute_metrics()
-    print("*******9th version TrecQA_train(ngram=1)******")
+    evaluation = Evaluation("./data/TFIDF_input/TrecQA_test.json", ngram=2)
+    mrr, accuracy = evaluation.compute_metrics(lang="en")
+    print("*******10th version TrecQA_train(test)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "9th version TrecQA_train(ngram=1)": {
+        "10th version TrecQA_train(test)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

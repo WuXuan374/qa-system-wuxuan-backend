@@ -28,10 +28,10 @@ class PreProcess:
         # 文件路径
         self.initial_train_data = './data/TrecQA/train.tsv'
         self.initial_validation_data = '../data/ChineseDBQA/nlpcc2017.dbqa.dev'
-        self.initial_test_data = '../data/ChineseDBQA/nlpcc2017.dbqa.test'
+        self.initial_test_data = './data/TrecQA/test.tsv'
         self.processed_train = './data/TFIDF_input/TrecQA_train.json'
         self.processed_val = '../data/TFIDF_input/validation.json'
-        self.processed_test = '../data/input/test.json'
+        self.processed_test = './data/TFIDF_input/TrecQA_test.json'
 
     def read_tsv_file(self, filename):
         """
@@ -76,6 +76,6 @@ class PreProcess:
 
 if __name__ == "__main__":
     pre_process = PreProcess()
-    train_data = pre_process.read_tsv_file(pre_process.initial_train_data)
-    with open(pre_process.processed_train, 'w', encoding="utf-8") as fp:
+    train_data = pre_process.read_tsv_file(pre_process.initial_test_data)
+    with open(pre_process.processed_test, 'w', encoding="utf-8") as fp:
         json.dump(train_data, fp, indent=2, ensure_ascii=False, default=file_content_to_dict)

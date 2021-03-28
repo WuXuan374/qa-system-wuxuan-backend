@@ -1,8 +1,13 @@
 import jieba
 import math
+import nltk
+from nltk.corpus import stopwords
 
 
 class Reorder:
+    def __init__(self, lang="zh"):
+        self.lang = lang
+
     def compute_score(self, question, answer, ngrams=(1, 3)):
         """
         参考严德美论文P32
@@ -37,7 +42,7 @@ class Reorder:
         question_len = len(tokenized_question)
         if question_len < ngram:
             return tokenized_question
-        ngram_list = ["".join(tokenized_question[index: index+k])
+        ngram_list = [("" if self.lang == "zh" else " ").join(tokenized_question[index: index+k])
                       for k in range(1, ngram + 1) for index in range(0, question_len - ngram + 1)]
         return ngram_list
 
@@ -49,16 +54,22 @@ class Reorder:
         :return: word_list: list
         """
         # 分词：精确模式
-        word_list = jieba.cut(str, cut_all=False)
-        # 去除停止词
-        # word_list = [word for word in word_list if word not in self.stopwords and not word.isspace()]
-        word_list = [word for word in word_list if not word.isspace()]
+        if self.lang == "zh":
+            word_list = jieba.cut(str, cut_all=False)
+            word_list = [word for word in word_list if not word.isspace()]
+
+        else:
+            word_list = nltk.word_tokenize(str)
+            stop_words = stopwords.words("english")
+            word_list = [word for word in word_list if word not in stop_words]
+
         if ngram == 1:
             return word_list
         sent_len = len(word_list)
         if sent_len < ngram:
             return word_list
-        word_list = ["".join(word_list[index: index + k])
+        word_list = [("" if self.lang == "zh" else " ").join(word_list[index: index + k])
                      for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
+
         return word_list
 

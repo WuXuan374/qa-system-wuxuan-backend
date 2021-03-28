@@ -98,5 +98,33 @@
   "9th version TrecQA_train(ngram=2)": {
     "MRR": 0.3147242597120346,
     "accuracy:": 0.4213528932355338
+  },
+  "10th version TrecQA_train(ngram=1)": {
+    "MRR": 0.3029068187992391,
+    "accuracy:": 0.41972290138549306
+  },
+  "10th version TrecQA_train(ngram=2)": {
+    "MRR": 0.3272208638956804,
+    "accuracy:": 0.44743276283618577
+  },
+  "10th version TrecQA_train(ngram=3)": {
+    "MRR": 0.25957620211898935,
+    "accuracy:": 0.3561532192339038
+  },
+  "10th version TrecQA_train(ngram=2, reorder)": {
+    "MRR": 0.346101602825319,
+    "accuracy:": 0.44743276283618577
+  },
+  "10th version TrecQA_train(ngram=2, reorder, top5)": {
+    "MRR": 0.37881010594946996,
+    "accuracy:": 0.5509372453137734
+  },
+  "10th version TrecQA_train(ngram=2, reorder, top5, trained_reorder_param)": {
+    "MRR": 0.4064520510730773,
+    "accuracy:": 0.5509372453137734
+  },
+  "10th version TrecQA_train(test)": {
+    "MRR": 0.34926470588235287,
+    "accuracy:": 0.6029411764705882
   }
 }

@@ -1,6 +1,7 @@
 import torch
 from torch import optim
 import torch.nn as nn
+import run_QA
 
 
 class Logistic_Regression(nn.Module):
@@ -18,27 +19,29 @@ class Logistic_Regression(nn.Module):
 
 if __name__ == "__main__":
     # prepare inputs and outputs data
-    # source_file = "./data/TFIDF_input/train_2016_new.json"
-    # reader = ReadDocumentContent(source_file, ngram=1)
+    # source_file = "./data/TFIDF_input/TrecQA_train.json"
+    # reader = run_QA.ReadDocumentContent(source_file, ngram=1)
     # inputs = []
     # outputs = []
     # for question_str in reader.content.keys():
     #     right_answer = reader.content[question_str]["right answer"]
-    #     print(right_answer)
     #     predicted_answers = reader.get_question_answer(
-    #         question_str, reader.content[question_str]["options"], stop_word_path="./data/stopwords.txt")
+    #         question_str, reader.content[question_str]["options"], stop_word_path="./data/stopwords.txt", lang="en")
     #     for answer in predicted_answers:
     #         if not answer:
     #             continue
     #         inputs.append([answer["first_score"], answer["second_score"]])
-    #         if answer["answer"] == "".join(right_answer):
+    #         # " " for "en" and "" for "zh
+    #         if answer["answer"] == " ".join(right_answer):
     #             outputs.append(1)
+    #             print(answer["answer"])
     #         else:
     #             outputs.append(0)
-    # torch.save(inputs, "./inputs.pt")
-    # torch.save(outputs, "./outputs.pt")
-    inputs = torch.load("./Logistic_regression/inputs.pt")
-    outputs = torch.load("./Logistic_regression/outputs.pt")
+    # torch.save(inputs, "./Logistic_Regression/inputs.pt")
+    # torch.save(outputs, "./Logistic_Regression/outputs.pt")
+
+    inputs = torch.load("./Logistic_Regression/inputs.pt")
+    outputs = torch.load("./Logistic_Regression/outputs.pt")
     # [14844, 2]
     inputs = torch.tensor(inputs, dtype=torch.float)
     # [14844]
@@ -64,7 +67,7 @@ if __name__ == "__main__":
         # 梯度置0
         optimizer.zero_grad()
 
-    torch.save(model.state_dict(), './parameter2.pkl')
+    torch.save(model.state_dict(), './Logistic_Regression/reorder_param.pkl')
 
     # 模型使用
     # model.load_state_dict(torch.load('./parameter.pkl'))
