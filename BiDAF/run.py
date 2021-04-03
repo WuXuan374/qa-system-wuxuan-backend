@@ -171,10 +171,6 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab):
         for i in range(c_char.size(0)):
             answer = (word_tokenize(contexts[i]))[start_idx[i]: end_idx[i]+1]
             print(answer)
-        # test_examples = data.Example.fromdict(test_examples, dict_fields)
-        # test_dataset = data.Dataset(examples=test_examples, fields=list_fields)
-        # test_iter = data.Iterator(test_dataset, batch_size=2)
-        # print(next(iter(test_iter)))
 
 
 if __name__ == "__main__":
@@ -199,7 +195,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     # print('loading SQuAD data...')
-    data = SQuAD(args)
+    # data = SQuAD(args)
     with open('vocabs/char_vocab.pickle', 'rb') as handle:
         char_vocab = pickle.load(handle)
     with open('vocabs/pretrained_vectors.pickle', 'rb') as handle:

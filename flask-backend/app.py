@@ -1,54 +1,56 @@
 #!flask/bin/python
 from flask import Flask, request, abort, jsonify, make_response
+import torch
 from flask_cors import CORS
 import json
 import os
 import sys
+import pickle
 sys.path.append("..")
 from run_QA import ReadDocumentContent
 from preprocess import get_keyword
 from question_retrieval import QuestionRetrieval
+from BiDAF.model import BiDAF_model
+from helper import get_args, run_with_model
 
+
+# app 配置及跨域
 app = Flask(__name__)
 CORS(app)
 
-# read file contentcontent
-sourcefile = './data/TrecQA_train.json'
-if os.path.isfile(sourcefile):
-    with open(sourcefile, 'r', encoding="utf-8") as load_j:
+# 文件路径
+sourceFilePath = './data/TrecQA_train.json'
+checkPointPath = './data/epoch_4.pt'
+vectorPath = './data/pretrained_vectors.pickle'
+charVocabPath = './data/char_vocab.pickle'
+wordVocabPath = './data/word_vocab.pickle'
+
+# 基础文件读取
+if os.path.isfile(sourceFilePath):
+    with open(sourceFilePath, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
 else:
     raise Exception("source file not exists\n")
+
+checkPoint = torch.load(checkPointPath)
+with open(vectorPath, 'rb') as handle:
+    pretrained_vectors = pickle.load(handle)
+with open(charVocabPath, 'rb') as handle:
+    char_vocab = pickle.load(handle)
+with open(wordVocabPath, 'rb') as handle:
+    word_vocab = pickle.load(handle)
+
+# 928 == len(char_vocab)
+args = get_args(928)
+model = BiDAF_model(args, pretrained_vectors)
+model.load_state_dict(checkPoint['model_state_dict'])
+# run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en")
 
 # api configuration
 apis = {
     "answers": "/api/answers/",
     "hints": "/api/hints",
 }
-
-
-def get_titles_by_keywords(keywords):
-    """
-    用户输入问题A --> 提取问题A中的关键词 --> 通过关键词查找匹配方式，寻找语料库中相似的问题B --> 返回B的title
-    语料库中相似的问题可能不止一条，所以可以返回多个相似问题
-    :param keywords: list
-    :return: question: list, ["南京大学化学化工学院改过哪些名字？", "南京大学小百合BBS是哪年创立？", ]
-    """
-    questions = []
-    if not keywords:
-        return questions
-    for question in content.keys():
-        for keywordInfo in (content[question]["keywords"]):
-            for query_keyword in keywords:
-                # 关键词完全匹配 or 用户关键词是文档关键词的子集
-                # e.g. 用户关键词：“北京大学”  文档关键词： “北京大学药学院”
-                if query_keyword == keywordInfo \
-                        or keywordInfo.find(query_keyword) != -1:
-                    # 通过上述关键词匹配，获得文本库中所有相关文本的标题(question)
-                    questions.append(question)
-                    # 有一个关键词匹配，就可以跳过当前循环，去查找下一个文本
-                    break
-    return questions
 
 
 @app.route(apis["answers"], methods=['GET'])
@@ -64,7 +66,7 @@ def get_answers():
     if question_str is None or len(question_str) == 0:
         return make_response(jsonify({'error': 'Not found'}), 404)
     else:
-        reader = ReadDocumentContent(sourcefile, ngram=1)
+        reader = ReadDocumentContent(sourceFilePath, ngram=1)
         question_options = list(content.keys())
         question_retrieval = QuestionRetrieval(question_str, question_options, top_num=3)
         # question_titles: list, e.g ['《野猪历险记》的游戏语言是什么？', ]
@@ -86,7 +88,7 @@ def get_answers():
 
 
 @app.route(apis["hints"], methods=['GET'])
-def get_keywords():
+def get_hints():
     """
     将语料库中的问题返回给前端，作为用户输入问题时的提示信息
     """
