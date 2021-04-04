@@ -78,14 +78,17 @@ def get_answers():
         for title in question_titles:
             current_answer = reader.get_question_answer\
                 (question_str, content[title]["options"], stop_word_path, lang="en")
+            contexts = list(map(lambda item: item["answer"], current_answer))
+            if len(contexts) == 0:
+                continue
+            if len(contexts) == 1:
+                # 模型无法接受batch_size = 1 的输入，因为squeeze 会删掉这个维度
+                contexts = contexts + contexts
+            questions = [question_str] * len(contexts)
+            concrete_answers = run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en")
             for index in range(len(current_answer)):
-                questions = [question_str] * 2
-                contexts = [current_answer[index]["answer"]] * 2
-                print(questions)
-                print(contexts)
-                concrete_answers = run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en")
                 current_answer[index]["document_title"] = title
-                current_answer[index]["concrete_answer"] = concrete_answers[0]
+                current_answer[index]["concrete_answer"] = concrete_answers[index]
                 sorted_answers.append(current_answer[index])
         # 从多个文本中，每个文本收集三个答案，随后对收集到的所有答案再根据score进行排序
         sorted_answers = sorted(sorted_answers, key=lambda x: x["final_score"], reverse=True)[:3]

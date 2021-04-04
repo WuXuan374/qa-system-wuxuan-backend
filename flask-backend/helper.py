@@ -70,23 +70,32 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en"
     """
 
     with torch.no_grad():
-        # Word Embedding
-        question_tokens = [[word_vocab[token] for token in word_tokenize(question, lang)] for question in questions]
-        context_tokens = [[word_vocab[token] for token in word_tokenize(context, lang)] for context in contexts]
-        print(question_tokens)
-        print(context_tokens)
+
+        if not questions or not contexts:
+            return []
+
+        # 04.04 模仿 Char Embedding, 进行对齐
+        tokenized_question = [word_tokenize(question, lang) for question in questions]
+        tokenized_context = [word_tokenize(context, lang) for context in contexts]
+        question_len = max([len(question) for question in tokenized_question])
+        context_len = max([len(context) for context in tokenized_context])
+        question_tokens = [[word_vocab[token] for token in word_tokenize(question, lang)] +
+                           [0] * (question_len - len(word_tokenize(question, lang))) for question in questions]
+        context_tokens = [[word_vocab[token] for token in word_tokenize(context, lang)] +
+                          [0] * (context_len - len(word_tokenize(context, lang))) for context in contexts]
+
         q_word = (torch.tensor(question_tokens), torch.tensor(list(map(lambda question: len(question), question_tokens))))
-        print(q_word)
         # q_word[0]: [batch_size, 8], q_word[1]: [batch_size]
         c_word = (torch.tensor(context_tokens), torch.tensor(list(map(lambda context: len(context), context_tokens))))
         
         # Char Embedding
         question_char_len = max([len(token) for question in questions for token in word_tokenize(question, lang)])
         context_char_len = max([len(token) for context in contexts for token in word_tokenize(context, lang)])
+        # Char 级层面， 不只是Char Padding, 还需要Word Padding
         question_chars = [[[char_vocab[char] for char in token] + [0] * (question_char_len - len(token)) for token in word_tokenize(question, lang)]
-                          for question in questions]
+                          + [[0] * question_char_len] * (question_len - len(word_tokenize(question, lang))) for question in questions]
         context_chars = [[[char_vocab[char] for char in token] + [0] * (context_char_len - len(token)) for token in word_tokenize(context, lang)]
-                         for context in contexts]
+                         + [[0] * context_char_len] * (context_len - len(word_tokenize(context, lang))) for context in contexts]
         # q_char: [batch_size, 8, 5]  c_char: [batch_size, 147, 11]
         q_char = torch.tensor(question_chars)
         c_char = torch.tensor(context_chars)
