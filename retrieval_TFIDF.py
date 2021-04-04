@@ -252,7 +252,6 @@ class RetrievalTFIDF:
                     {"answer": answer_str, "first_score": sim, "concrete_answer": ", ".join(concrete_answers)})
 
             else:
-                print({"answer": answer_str, "score": sim})
                 possible_answers.append({"answer": answer_str, "first_score": sim})
 
         return possible_answers

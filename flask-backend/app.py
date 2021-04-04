@@ -1,5 +1,5 @@
 #!flask/bin/python
-from flask import Flask, request, abort, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 import torch
 from flask_cors import CORS
 import json
@@ -8,7 +8,6 @@ import sys
 import pickle
 sys.path.append("..")
 from run_QA import ReadDocumentContent
-from preprocess import get_keyword
 from question_retrieval import QuestionRetrieval
 from BiDAF.model import BiDAF_model
 from helper import get_args, run_with_model
@@ -68,7 +67,7 @@ def get_answers():
     else:
         reader = ReadDocumentContent(sourceFilePath, ngram=1)
         question_options = list(content.keys())
-        question_retrieval = QuestionRetrieval(question_str, question_options, top_num=3)
+        question_retrieval = QuestionRetrieval(question_str, question_options, top_num=3, lang="en")
         # question_titles: list, e.g ['《野猪历险记》的游戏语言是什么？', ]
         question_titles = list(map(lambda option: option[0], question_retrieval.candidate_options))
         # sorted_answers: [answer, score, document_title]
@@ -78,12 +77,18 @@ def get_answers():
         # 根据title, 在title对应的文本中查找答案
         for title in question_titles:
             current_answer = reader.get_question_answer\
-                (question_str, content[title]["options"], stop_word_path)
-            for item in current_answer:
-                item["document_title"] = title
-                sorted_answers.append(item)
+                (question_str, content[title]["options"], stop_word_path, lang="en")
+            for index in range(len(current_answer)):
+                questions = [question_str] * 2
+                contexts = [current_answer[index]["answer"]] * 2
+                print(questions)
+                print(contexts)
+                concrete_answers = run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en")
+                current_answer[index]["document_title"] = title
+                current_answer[index]["concrete_answer"] = concrete_answers[0]
+                sorted_answers.append(current_answer[index])
         # 从多个文本中，每个文本收集三个答案，随后对收集到的所有答案再根据score进行排序
-        sorted_answers = sorted(sorted_answers, key=lambda x: x["score"], reverse=True)[:3]
+        sorted_answers = sorted(sorted_answers, key=lambda x: x["final_score"], reverse=True)[:3]
         return jsonify({'answers': sorted_answers})
 
 

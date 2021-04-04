@@ -2,14 +2,15 @@ import json
 import jieba
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.spatial import distance
+import nltk
 
 
 class QuestionRetrieval:
-    def __init__(self, question_str, options, top_num):
+    def __init__(self, question_str, options, top_num, lang="en"):
         self.idf = {}  # dict
-        self.question_str = self.tokenize(question_str)
+        self.question_str = self.tokenize(question_str, lang=lang)
         self.options = options
-        self.tokenized_options = list(map(lambda option: self.tokenize(option), options))
+        self.tokenized_options = list(map(lambda option: self.tokenize(option, lang=lang), options))
         self.tfIdf_array = self.compute_tfidf()
         self.candidate_options = self.compute_similarity(top_num=top_num)
 
@@ -42,25 +43,27 @@ class QuestionRetrieval:
         candidate_options = sorted(candidate_options, key=lambda x: x[1], reverse=True)[:top_num]
         return candidate_options
 
-    def tokenize(self, str):
+    def tokenize(self, str, lang="en"):
         """
         对句子进行分词。包含去除停止词功能，支持生成n-gram
         :param str: string
-        :param ngram: if ngram=2, generates 1-gram and 2-gram
         :return: sent: string, 将分词后的结果通过空格分隔(Tfidf Vectorizer的要求）
                 e.g. '今天 是 晴天'
         """
-        # 分词：精确模式
-        word_list = jieba.cut(str, cut_all=False)
-        # 去除停止词
-        # word_list = [word for word in word_list if word not in self.stopwords and not word.isspace()]
-        word_list = [word for word in word_list if not word.isspace()]
+        if lang == "zh":
+            # 分词：精确模式
+            word_list = jieba.cut(str, cut_all=False)
+            # 去除停止词
+            word_list = [word for word in word_list if not word.isspace()]
+
+        else:
+            word_list = nltk.word_tokenize(str)
         sent = " ".join([word for word in word_list])
         return sent
 
 
 if __name__ == "__main__":
-    sourcefile = './data/TFIDF_input/train_2016_new.json'
+    sourcefile = './data/TFIDF_input/TrecQA_train.json'
     with open(sourcefile, 'r', encoding="utf-8") as load_j:
         content = json.load(load_j)
     # for question_str in content.keys():
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     # possible_answers = tfidf.query(question.question_vector)
     # print(possible_answers)
     question_options = list(content.keys())
-    question_retrieval = QuestionRetrieval("《野猪历险记》的游戏语言是什么？", question_options, top_num=3)
+    question_retrieval = QuestionRetrieval("South Africa's total population", question_options, top_num=3, lang="en")
     print(question_retrieval.candidate_options)
 
 

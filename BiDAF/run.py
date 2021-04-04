@@ -219,28 +219,28 @@ if __name__ == "__main__":
     #     os.makedirs('saved_models')
     # torch.save(model.state_dict(), f'saved_models/BiDAF_{args.model_time}.pt')
     # model.load_state_dict(torch.load('saved_models/BiDAF_03_07_08_37_36.pt'))
-    # questions = ["Where did Super Bowl 50 take place?", "Which NFL team won Super Bowl 50?"]
-    # contexts = ["Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50.",
-    #             "Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24\u201310 to earn their third Super Bowl title. The game was played on February 7, 2016, at Levi's Stadium in the San Francisco Bay Area at Santa Clara, California. As this was the 50th Super Bowl, the league emphasized the \"golden anniversary\" with various gold-themed initiatives, as well as temporarily suspending the tradition of naming each Super Bowl game with Roman numerals (under which the game would have been known as \"Super Bowl L\"), so that the logo could prominently feature the Arabic numerals 50."]
-    # run_with_model(model, questions=questions,
-    #                contexts=contexts,
-    #                word_vocab=word_vocab, char_vocab=char_vocab)
+
     # model.eval()
 
     # 从checkPoints 中读取model, 随后对model进行测试
     checkPoint = torch.load(args.checkpoint)
     model = BiDAF(args, pretrained_vectors)
     model.load_state_dict(checkPoint['model_state_dict'])
-    dev_loss, dev_exact, dev_f1 = test(model, args, data)
-    print(f'dev loss: {dev_loss: .3f}'
-          f' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
-    result = {
-        "context_len=150, epoch=3, 0310": {
-            "Dev loss": dev_loss,
-            "Dev exact": dev_exact,
-            "Dev F1": dev_f1,
-        }
-    }
-    with open('./outputs/evaluation.json', 'a', encoding="utf-8") as fp:
-        json.dump(result, fp, indent=2, ensure_ascii=False)
+    questions = ["What was the number of solo tackles that Von Miller had in Super Bowl 50?"]
+    contexts = ["The Broncos took an early lead in Super Bowl 50 and never trailed. Newton was limited by Denver's defense, which sacked him seven times and forced him into three turnovers, including a fumble which they recovered for a touchdown. Denver linebacker Von Miller was named Super Bowl MVP, recording five solo tackles, 2\u00bd sacks, and two forced fumbles."]
+    run_with_model(model, questions=questions,
+                   contexts=contexts,
+                   word_vocab=word_vocab, char_vocab=char_vocab)
+    # dev_loss, dev_exact, dev_f1 = test(model, args, data)
+    # print(f'dev loss: {dev_loss: .3f}'
+    #       f' / dev EM: {dev_exact:.3f} / dev F1: {dev_f1:.3f}')
+    # result = {
+    #     "context_len=150, epoch=3, 0310": {
+    #         "Dev loss": dev_loss,
+    #         "Dev exact": dev_exact,
+    #         "Dev F1": dev_f1,
+    #     }
+    # }
+    # with open('./outputs/evaluation.json', 'a', encoding="utf-8") as fp:
+    #     json.dump(result, fp, indent=2, ensure_ascii=False)
 

@@ -4,6 +4,7 @@ import json
 from reorder import Reorder
 from logistic_regression import Logistic_Regression
 import torch
+import os
 
 
 # 创建这个类的目的：提前完成json文件的读取，不需要针对每个问题去读取一次文件
@@ -36,11 +37,11 @@ class ReadDocumentContent:
             possible_answer["second_score"] = m_score
             # 将重排序得分和初次检索得分进行相加
             model = Logistic_Regression(2, 2)
-            model.load_state_dict(torch.load('./Logistic_Regression/reorder_param.pkl'))
+            model.load_state_dict(torch.load('F:/QA-system-wuxuan/qa-system-wuxuan/Logistic_Regression/reorder_param.pkl'))
             score_tensor = torch.tensor([possible_answer["first_score"], m_score], dtype=torch.float).view(-1, 2)
             final_score, _ = model(score_tensor)
             final_score = final_score[0][1]
-            possible_answer["final_score"] = final_score
+            possible_answer["final_score"] = final_score.item()
         # 根据相加后的分数，再次排序
         possible_answers = sorted(possible_answers, key=lambda x: x["final_score"], reverse=True)
         return possible_answers

@@ -54,10 +54,8 @@ class Testcase:
 
 
 def word_tokenize(str, lang="en"):
-    if lang == "zh":
-        return [token.replace("''", '"').replace("``", '"') for token in nltk.word_tokenize(str)]
-    else:
-        return nltk.word_tokenize(str)
+    return [token.replace("''", '"').replace("``", '"')
+            for token in nltk.word_tokenize(str)]
 
 
 def run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en"):
@@ -67,7 +65,7 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en"
     :param contexts: list of context(str)
     :param word_vocab:
     :param char_vocab:
-    :param: lang: "en" | "zh"
+    :param lang: "en" | "zh"
     :return: answers: list of answer(str)
     """
 
@@ -75,7 +73,10 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en"
         # Word Embedding
         question_tokens = [[word_vocab[token] for token in word_tokenize(question, lang)] for question in questions]
         context_tokens = [[word_vocab[token] for token in word_tokenize(context, lang)] for context in contexts]
+        print(question_tokens)
+        print(context_tokens)
         q_word = (torch.tensor(question_tokens), torch.tensor(list(map(lambda question: len(question), question_tokens))))
+        print(q_word)
         # q_word[0]: [batch_size, 8], q_word[1]: [batch_size]
         c_word = (torch.tensor(context_tokens), torch.tensor(list(map(lambda context: len(context), context_tokens))))
         
@@ -101,7 +102,7 @@ def run_with_model(model, questions, contexts, word_vocab, char_vocab, lang="en"
         # c_char.size(0): 测试用例的数量
         for i in range(c_char.size(0)):
             answer = (word_tokenize(contexts[i], lang))[start_idx[i]: end_idx[i]+1]
-            answers.append(answer)
-        
-        print(answers)
+            answers.append(" ".join(answer))
+
         return answers
+
