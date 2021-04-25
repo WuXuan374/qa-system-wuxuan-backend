@@ -51,11 +51,11 @@ if __name__ == "__main__":
     word_vector = KeyedVectors.load('./data/word2vec/vectors.kv')
     evaluation = Evaluation("./data/TFIDF_input/TrecQA_train.json", ngram=1, word_vector=word_vector)
     mrr, accuracy = evaluation.compute_metrics(lang="en", type="embedding")
-    print("*******12th version TrecQA_train(TFIDF)******")
+    print("*******12th version TrecQA_train(embedding)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "12th version TrecQA_train(TFIDF)": {
+        "12th version TrecQA_train(embedding)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

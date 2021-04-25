@@ -130,5 +130,13 @@
   "12th version TrecQA_train(TFIDF)": {
     "MRR": 0.3801140994295022,
     "accuracy:": 0.5199674001629991
+  },
+  "12th version TrecQA_train(embedding + preprocess)": {
+    "MRR": 0.2978810105949469,
+    "accuracy:": 0.35859820700896494
+  },
+  "12th version TrecQA_train(embedding)": {
+    "MRR": 0.2842977451779408,
+    "accuracy:": 0.34963325183374083
   }
 }

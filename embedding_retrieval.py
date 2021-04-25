@@ -31,9 +31,10 @@ class EmbeddingRetrieval:
         :param ngram: ['北京科技大学','北京科技大学简称','北京科技大学简称北科']
         :return:
         """
-        sent = [word for word in sent if word not in self.stopwords and not word.isspace()]
-        sent = [word for word in sent if word not in string.punctuation]
-        sent = [nltk.WordNetLemmatizer().lemmatize(word) for word in sent]
+        # sent = [word for word in sent if word not in self.stopwords and not word.isspace()]
+        # sent = [word for word in sent if word not in string.punctuation]
+        # sent = [nltk.WordNetLemmatizer().lemmatize(word) for word in sent]
+        sent = [word for word in sent if word not in self.stopwords]
         if ngram == 1:
             return sent
         sent_len = len(sent)
@@ -51,7 +52,7 @@ class EmbeddingRetrieval:
         """
         top_options = []
         for index in range(0, len(self.word_embedding)):
-            if self.word_embedding[index] == [] or self.word_embedding[index].shape[1] != 300:
+            if len(self.word_embedding[index].shape) < 2 or self.word_embedding[index].shape[1] != 300:
                 print(self.options[index])
                 continue
             similarity = sum(sum(dot(self.word_embedding[index], question_vector.T)\
