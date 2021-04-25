@@ -1,20 +1,22 @@
 import json
 import os
 from run_QA import ReadDocumentContent
+from gensim.models import KeyedVectors
 
 
 class Evaluation:
-    def __init__(self, source_file, ngram=1):
+    def __init__(self, source_file, ngram=1, word_vector=None):
         self.source_file = source_file
         if not os.path.isfile(source_file):
             raise Exception("Source file not exists")
         self.ngram = ngram
-        self.reader = ReadDocumentContent(self.source_file, self.ngram)
+        self.reader = ReadDocumentContent(self.source_file, self.ngram, word_vector=word_vector)
         self.content = self.reader.content
 
-    def compute_metrics(self, lang="zh"):
+    def compute_metrics(self, lang="zh", type="TFIDF"):
         """
         compute evaluation metrics: MRR and Accuracy
+        :param type: "TFIDF" || "embedding", 计算TFIDF矩阵的相似度 || 计算 Word Embedding 的相似度
         :return: mrr(num)
         :return: accuracy(num)
         """
@@ -29,7 +31,7 @@ class Evaluation:
                 accuracy_sum += 1
                 continue
             predicted_answers = self.reader.get_question_answer(
-                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt", lang=lang)
+                question_str, self.content[question_str]["options"], stop_word_path="./data/stopwords.txt", lang=lang, type=type)
             if not predicted_answers:
                 continue
             for index in range(len(predicted_answers)):
@@ -46,13 +48,14 @@ class Evaluation:
 
 
 if __name__ == "__main__":
-    evaluation = Evaluation("./data/TFIDF_input/TrecQA_test.json", ngram=2)
-    mrr, accuracy = evaluation.compute_metrics(lang="en")
-    print("*******10th version TrecQA_train(test)******")
+    word_vector = KeyedVectors.load('./data/word2vec/vectors.kv')
+    evaluation = Evaluation("./data/TFIDF_input/TrecQA_train.json", ngram=1, word_vector=word_vector)
+    mrr, accuracy = evaluation.compute_metrics(lang="en", type="embedding")
+    print("*******12th version TrecQA_train(TFIDF)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "10th version TrecQA_train(test)": {
+        "12th version TrecQA_train(TFIDF)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

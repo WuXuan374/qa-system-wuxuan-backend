@@ -42,6 +42,8 @@ class RetrievalTFIDF:
                 word_frequency[word] += 1
             else:
                 word_frequency[word] = 1
+        # TF 的计算公式中需要除去文章的单词总数，
+        # 但实际上是否进行除法不影响不同单词的TF相对值，因此省略这步计算
         return word_frequency
 
     def computeTFIDF(self):
@@ -91,7 +93,7 @@ class RetrievalTFIDF:
         """
         compute cosine-similarity between query and answer candidate
         :param p_info: dict, optionsInfo[index], including "wf" and "tfIdf". 一个候选答案的相关信息
-        :param query_vector: dict, tf 问题的tf向量, {'单词': '频率'}
+        :param query_vector: dict,问题的tf向量, {'单词': '频率'}
         :param query_distance: distance of query_vector
         :return: similarity: x*y/(|x| * |y|)
         """
@@ -129,7 +131,7 @@ class RetrievalTFIDF:
         # 如果有选项similarity == 0, 是否就不用返回top3了？
         for index in range(0, len(self.ngram_options)):
             similarity = self.compute_similarity(self.optionsInfo[index], query_vector, query_distance)
-            # 过滤掉ximilarity score <= 0 的候选答案
+            # 过滤掉similarity score <= 0 的候选答案
             if similarity > 0:
                 top_options.append((index, similarity))
         length = len(top_options)

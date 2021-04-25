@@ -4,28 +4,13 @@ import json
 import nltk
 import gensim
 from nltk.corpus import stopwords
+from gensim.models import KeyedVectors
+import numpy as np
 ltp = LTP()
 
 
-# def word2vec(tokens, embeddings):
-#     """
-#     输入词链表，生成对应的word embedding vector
-#     :param tokens: list, e.g, ["浙江大学", "人文学院"]
-#     :param embeddings: gensim 读取预训练词向量的结果
-#     :return: word_vec: list of array, e.g. [[0.1,0.3...,0.5]], 每一个数组是300维的
-#     """
-#     dim = embeddings['word'].size
-#     word_vec = []
-#     for word in tokens:
-#         if word in embeddings:
-#             word_vec.append(embeddings[word])
-#         else:
-#             word_vec.append(np.random.uniform(-0.25, 0.25, dim))
-#     return np.array(word_vec)
-
-
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, ngram=1, lang="zh"):
+    def __init__(self, question, stop_word_path, word_vector=None, ngram=1, lang="zh"):
         self.lang = lang
         self.question = question
         if self.lang == "en":
@@ -43,7 +28,8 @@ class ProcessQuestion:
         self.ngram_question = self.get_ngram(self.tokenized_question, ngram=ngram)
         self.question_vector = self.get_vector(self.ngram_question)
         self.answer_types = self.determine_answer_type()
-        # self.question_embedding = word2vec(self.ngram_question, embeddings)
+        self.word_vector = word_vector
+        self.question_embedding = np.array([self.word_vector[w] if w in self.word_vector else np.zeros((300,), dtype=float) for w in self.ngram_question])
 
     def tokenize(self, question):
         """
@@ -137,13 +123,15 @@ class ProcessQuestion:
 
 
 if __name__ == "__main__":
-    with open("./data/output/fileContent.json", 'r', encoding="utf-8") as load_j:
-        content = json.load(load_j)
-    embedding_file = "./data/word2vec/word2vec-300.iter5"
-    print("embedding reading")
-    embeddings = gensim.models.KeyedVectors.\
-        load_word2vec_format(embedding_file, binary=False, unicode_errors='ignore')
-    for question_str in content.keys():
-        question = ProcessQuestion(question_str, './data/stopwords.txt', embeddings, ngram=2)
-        answer_types = question.determine_answer_type()
-        print(answer_types)
+    # with open("./data/output/fileContent.json", 'r', encoding="utf-8") as load_j:
+    #     content = json.load(load_j)
+    # embedding_file = "./data/word2vec/word2vec-300.iter5"
+    # print("embedding reading")
+    # embeddings = gensim.models.KeyedVectors.\
+    #     load_word2vec_format(embedding_file, binary=False, unicode_errors='ignore')
+    # for question_str in content.keys():
+    #     question = ProcessQuestion(question_str, './data/stopwords.txt', embeddings, ngram=2)
+    #     answer_types = question.determine_answer_type()
+    #     print(answer_types)
+    pq = ProcessQuestion("who is the author of the book , `` the iron lady : a biography of margaret thatcher '' ?", './data/stopwords.txt', lang="en")
+    print(pq.question_embedding, pq.ngram_question)

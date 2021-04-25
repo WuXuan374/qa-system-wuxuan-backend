@@ -126,10 +126,9 @@
   "10th version TrecQA_train(test)": {
     "MRR": 0.34926470588235287,
     "accuracy:": 0.6029411764705882
-  }
-}{
-  "10th version TrecQA_train(test)": {
-    "MRR": 0.34926470588235287,
-    "accuracy:": 0.6029411764705882
+  },
+  "12th version TrecQA_train(TFIDF)": {
+    "MRR": 0.3801140994295022,
+    "accuracy:": 0.5199674001629991
   }
 }
