@@ -28,7 +28,7 @@ class ReadDocumentContent:
         :return: possible_answers: list of tuple, [(answer(str), similarity(number)] [("76个本科专业", 0.1555555)]
         """
         # question = ProcessQuestion(question_str, stop_word_path, self.embeddings, ngram=self.ngram)
-        question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram, word_vector=self.word_vector)
+        question = ProcessQuestion(question_str, stop_word_path, ngram=self.ngram, word_vector=self.word_vector, type=type)
         # word_embedding = RetrievalWordEmbedding(answer_options, question.answer_types, self.embeddings, ngram=self.ngram)
         # possible_answers = word_embedding.query(question.question_embedding)
         if type == "TFIDF":
@@ -39,19 +39,19 @@ class ReadDocumentContent:
             possible_answers = er.query(question.question_embedding)
 
         # 计算重排序得分
-        reorder = Reorder(lang=lang)
-        for possible_answer in possible_answers:
-            m_score = reorder.compute_score(question_str, possible_answer["answer"], (1, 3))
-            possible_answer["second_score"] = m_score
-            # 将重排序得分和初次检索得分进行相加
-            model = Logistic_Regression(2, 2)
-            model.load_state_dict(torch.load('F:/QA-system-wuxuan/qa-system-wuxuan/Logistic_Regression/reorder_param.pkl'))
-            score_tensor = torch.tensor([possible_answer["first_score"], m_score], dtype=torch.float).view(-1, 2)
-            final_score, _ = model(score_tensor)
-            final_score = final_score[0][1]
-            possible_answer["final_score"] = final_score.item()
+        # reorder = Reorder(lang=lang)
+        # for possible_answer in possible_answers:
+        #     m_score = reorder.compute_score(question_str, possible_answer["answer"], (1, 3))
+        #     possible_answer["second_score"] = m_score
+        #     # 将重排序得分和初次检索得分进行相加
+        #     model = Logistic_Regression(2, 2)
+        #     model.load_state_dict(torch.load('F:/QA-system-wuxuan/qa-system-wuxuan/Logistic_Regression/reorder_param.pkl'))
+        #     score_tensor = torch.tensor([possible_answer["first_score"], m_score], dtype=torch.float).view(-1, 2)
+        #     final_score, _ = model(score_tensor)
+        #     final_score = final_score[0][1]
+        #     possible_answer["final_score"] = final_score.item()
         # 根据相加后的分数，再次排序
-        possible_answers = sorted(possible_answers, key=lambda x: x["final_score"], reverse=True)
+        possible_answers = sorted(possible_answers, key=lambda x: x["first_score"], reverse=True)
         return possible_answers
 
 

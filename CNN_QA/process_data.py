@@ -5,6 +5,7 @@ import json
 from collections import Counter
 import pickle
 from ltp import LTP
+import nltk
 ltp = LTP()
 
 
@@ -32,11 +33,11 @@ def file_content_to_dict(f):
 class PreProcess:
     def __init__(self):
         # 文件路径
-        self.initial_train_data = '../data/ChineseDBQA/nlpcc2016.dbqa.test'
-        self.initial_validation_data = '../data/ChineseDBQA/nlpcc2017.dbqa.dev'
+        self.initial_train_data = '../data/TrecQA/train.tsv'
+        self.initial_validation_data = '../data/TrecQA/dev.tsv'
         self.initial_test_data = '../data/ChineseDBQA/nlpcc2017.dbqa.test'
-        self.processed_train = '../data/TFIDF_input/train_2016_new.json'
-        self.processed_val = '../data/TFIDF_input/validation.json'
+        self.processed_train = './input/TrecQA_train.json'
+        self.processed_val = './input/TrecQA_dev.json'
         self.processed_test = '../data/input/test.json'
 
         # if os.path.isfile('../data/stopwords.txt'):
@@ -66,7 +67,7 @@ class PreProcess:
     #
     #     return res
 
-    def read_tsv_file(self, filename):
+    def read_tsv_file(self, filename, lang="en"):
         """
         :param filename: string
         :return: res: dictionary
@@ -79,24 +80,25 @@ class PreProcess:
                 label, question, content = row
                 print(question)
                 if res.get(question) is None:
-                    res[question] = FileContent()
-                res[question].add_answer_options(self.tokenize(content, ngram=1))
-                if label == '1':
-                    res[question].set_right_answer(self.tokenize(content, ngram=1))
+                    res[question] = []
+                res[question].append((label, self.tokenize(question, ngram=1, lang="en"), self.tokenize(content, ngram=1, lang="en")))
         else:
             raise Exception(filename + " not exists\n")
-
         return res
 
-    def tokenize(self, str, ngram=1):
+    def tokenize(self, str, ngram=1, lang="en"):
         """
         对句子进行分词。包含去除停止词功能，支持生成n-gram
         :param str: string
         :param ngram: if ngram=2, generates 1-gram and 2-gram
         :return: word_list: list
         """
-        # 分词：精确模式
-        word_list = jieba.cut(str, cut_all=False)
+        if lang == "zh":
+            # 分词：精确模式
+            word_list = jieba.cut(str, cut_all=False)
+        else:
+            word_list = nltk.word_tokenize(str)
+
         # 去除停止词
         # word_list = [word for word in word_list if word not in self.stopwords and not word.isspace()]
         word_list = [word for word in word_list if not word.isspace()]
@@ -105,7 +107,7 @@ class PreProcess:
         sent_len = len(word_list)
         if sent_len < ngram:
             return word_list
-        word_list = ["".join(word_list[index: index + k])
+        word_list = ["" if lang == "zh" else " ".join(word_list[index: index + k])
                      for k in range(1, ngram + 1) for index in range(0, sent_len - ngram + 1)]
         return word_list
 
@@ -121,7 +123,7 @@ class PreProcess:
         freq_dict = Counter(all_words)
         idx2word = dict(enumerate([word for (word, freq) in freq_dict.most_common(dict_size)]))
         word2idx = dict([(value, key) for (key, value) in idx2word.items()])
-        with open('../data/models/word2idx.pickle', 'wb') as handle:
+        with open('../data/models/word2idx_en.pickle', 'wb') as handle:
             pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def keyword_extraction(self, file_content):
@@ -177,8 +179,9 @@ if __name__ == "__main__":
     # preprocess.keyword_extraction(file_content)
 
     pre_process = PreProcess()
-    train_data = pre_process.read_tsv_file(pre_process.initial_train_data)
-    train_data = pre_process.keyword_extraction(train_data)
-    with open(pre_process.processed_train, 'w', encoding="utf-8") as fp:
-        json.dump(train_data, fp, indent=2, ensure_ascii=False, default=file_content_to_dict)
+    pre_process.get_word2idx()
+    # train_data = pre_process.read_tsv_file(pre_process.initial_validation_data, lang="en")
+    # # train_data = pre_process.keyword_extraction(train_data)
+    # with open(pre_process.processed_val, 'w', encoding="utf-8") as fp:
+    #     json.dump(train_data, fp, indent=2, ensure_ascii=False, default=file_content_to_dict)
 

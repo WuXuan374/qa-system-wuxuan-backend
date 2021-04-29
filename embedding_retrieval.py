@@ -56,7 +56,7 @@ class EmbeddingRetrieval:
                 print(self.options[index])
                 continue
             similarity = sum(sum(dot(self.word_embedding[index], question_vector.T)\
-                         /(norm(self.word_embedding[index])*norm(question_vector))))
+                         /(norm(self.word_embedding[index])* norm(question_vector))))
             # 过滤掉similarity score <= 0 的候选答案
             if similarity > 0:
                 top_options.append((index, similarity))

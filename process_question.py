@@ -10,7 +10,7 @@ ltp = LTP()
 
 
 class ProcessQuestion:
-    def __init__(self, question, stop_word_path, word_vector=None, ngram=1, lang="zh"):
+    def __init__(self, question, stop_word_path, word_vector=None, ngram=1, lang="zh", type="TFIDF"):
         self.lang = lang
         self.question = question
         if self.lang == "en":
@@ -29,7 +29,8 @@ class ProcessQuestion:
         self.question_vector = self.get_vector(self.ngram_question)
         self.answer_types = self.determine_answer_type()
         self.word_vector = word_vector
-        self.question_embedding = np.array([self.word_vector[w] if w in self.word_vector else np.zeros((300,), dtype=float) for w in self.ngram_question])
+        if type == "embedding":
+            self.question_embedding = np.array([self.word_vector[w] if w in self.word_vector else np.zeros((300,), dtype=float) for w in self.ngram_question])
 
     def tokenize(self, question):
         """

@@ -138,5 +138,32 @@
   "12th version TrecQA_train(embedding)": {
     "MRR": 0.2842977451779408,
     "accuracy:": 0.34963325183374083
+  },
+  "12th version train_2017(TFIDF)": {
+    "MRR": 0.41819486027944264,
+    "accuracy:": 0.5819610778443114
+  }, "12th version train_2017(embedding)": {
+    "MRR": 0.2267340319361276,
+    "accuracy:": 0.33458083832335334
+  },
+  "12th version validation(embedding)": {
+    "MRR": 0.23282442748091597,
+    "accuracy:": 0.3536895674300255
+  },
+  "12th version validation(TFIDF)": {
+    "MRR": 0.4143765903307886,
+    "accuracy:": 0.5648854961832062
+  },
+  "12th version TrecQA_test(TFIDF)": {
+    "MRR": 0.354656862745098,
+    "accuracy:": 0.5882352941176471
+  },
+  "12th version TrecQA_train(embedding)": {
+    "MRR": 0.2515620755229557,
+    "accuracy:": 0.34963325183374083
+  },
+  "12th version TrecQA_test(embedding)": {
+    "MRR": 0.17401960784313728,
+    "accuracy:": 0.29411764705882354
   }
 }

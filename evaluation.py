@@ -35,7 +35,7 @@ class Evaluation:
             if not predicted_answers:
                 continue
             for index in range(len(predicted_answers)):
-                if (" ".join(right_answer)) == (predicted_answers[index]["answer"]):
+                if (("" if lang == "zh" else " ").join(right_answer)) == (predicted_answers[index]["answer"]):
                     mrr_sum += 1/(index+1)
                     accuracy_sum += 1
                     print("question", question_str)
@@ -48,14 +48,17 @@ class Evaluation:
 
 
 if __name__ == "__main__":
+    # english embedding
     word_vector = KeyedVectors.load('./data/word2vec/vectors.kv')
-    evaluation = Evaluation("./data/TFIDF_input/TrecQA_train.json", ngram=1, word_vector=word_vector)
+    # Chinese embedding
+    # word_vector = KeyedVectors.load_word2vec_format('./data/word2vec/word2vec-300.iter5', binary=False, unicode_errors='ignore').wv
+    evaluation = Evaluation("./data/TFIDF_input/TrecQA_test.json", ngram=1, word_vector=word_vector)
     mrr, accuracy = evaluation.compute_metrics(lang="en", type="embedding")
-    print("*******12th version TrecQA_train(embedding)******")
+    print("*******12th version TrecQA_test(embedding)******")
     print("MRR: ", mrr)
     print("accuracy: ", accuracy)
     result = {
-        "12th version TrecQA_train(embedding)": {
+        "12th version TrecQA_test(embedding)": {
             "MRR": mrr,
             "accuracy:": accuracy,
         }

@@ -169,7 +169,7 @@ class CnnModel(nn.Module):
         :return:
         """
         # 进行卷积，对卷积的结果使用Relu激活函数（使得结果范围在[0,1)之间）
-        x = torch.tanh(conv(x)).squeeze(3)
+        x = torch.relu(conv(x)).squeeze(3)
         # after: x (1, embedding_dim, 604/603/602)
         # size(2): out_channels
         x = F.max_pool1d(x, x.size(2)).squeeze(2)
@@ -489,37 +489,43 @@ def test(train_ds, val_ds, bs, model_path):
     return train_accu, val_accu
 
 
-if __name__ == "__main__":
-    # 参数定义
-    vocab_size = 15
+def main(train_path, val_path, model_save_path, lang="zh", smote=False):
+    vocab_size = 30
     embedding_dim = 300
     n_in = 40
     n_hidden = 256
     n_out = 2
     lr = 2e-5
     bs = 400
-    epochs = 5
-    with open('../data/models/word2idx.pickle', 'rb') as handle:
-        word2idx = pickle.load(handle)
-    oov_index = len(word2idx.keys())  # 70000
-    # word2idx需要提前保存，不然使用模型时要花很长时间加载
-    # with open('../data/models/word2idx.pickle', 'wb') as handle:
-    #     pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    epochs = 3
 
-    # 数据读取
-    train_data_path = "../data/input/train_2017.json"
-    validation_data_path = "../data/input/validation.json"
+    if lang == "zh":
+        with open('../data/models/word2idx.pickle', 'rb') as handle:
+            word2idx = pickle.load(handle)
+    else:
+        with open('../data/models/word2idx_en.pickle', 'rb') as handle:
+            word2idx = pickle.load(handle)
+    oov_index = len(word2idx.keys())
+    print('oov_index', oov_index)
+
+    # train_data_path = "./input/TrecQA_train.json"
+    # validation_data_path = "./input/TrecQA_dev.json"
+    train_data_path = train_path
+    validation_data_path = val_path
     with open(train_data_path, 'r', encoding="utf-8") as load_j:
         train_data = json.load(load_j)
     with open(validation_data_path, 'r', encoding="utf-8") as load_j:
         validation_data = json.load(load_j)
+    model = CnnModel(embedding_file=
+                        "../data/word2vec/gensim_glove.6B.300d.txt"
+                        if lang == "en"
+                        else "../data/word2vec/word2vec-300.iter5",
+                     embedding_dim=embedding_dim, vocab_size=vocab_size,
+                     # save_path="../data/models/model_CNN_TrecQA_train_epochs5.pth",
+                     save_path=model_save_path,
+                     word2idx=word2idx, n_in=n_in, n_hidden=n_hidden, n_out=n_out)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    # model = CnnModel(embedding_file="../data/word2vec/word2vec-300.iter5",
-    #                  embedding_dim=embedding_dim, vocab_size=vocab_size,
-    #                  save_path="../data/models/model_CNN_focalloss_train2017.pth",
-    #                  word2idx=word2idx, n_in=n_in, n_hidden=n_hidden, n_out=n_out)
-    # optimizer = optim.Adam(model.parameters(), lr=lr)
-    # 训练集数据
     train_questions = []
     train_answers = []
     train_labels = []
@@ -528,29 +534,17 @@ if __name__ == "__main__":
             train_labels.append(int(item[0]))
             train_questions.append(item[1])
             train_answers.append(item[2])
-    # 查看训练集中句子的长度
-    # question_len = map(lambda question: len(question), train_questions)
-    # print(Counter(question_len))
-    # answer_len = map(lambda answer: len(answer), train_answers)
-    # print(Counter(answer_len))
-    train_questions = sentence_encode(train_questions, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
-    train_answers = sentence_encode(train_answers, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
+    train_questions = sentence_encode(train_questions, vocab_size, oov_index, word2idx)
+    train_answers = sentence_encode(train_answers, vocab_size, oov_index, word2idx)
 
-    # 总共有75%的单词都被记做oov token, 能成就有鬼了
-    # print(np.count_nonzero(train_questions == oov_index) / (train_questions.shape[0] * train_questions.shape[1]))
-
-
-    # with SMOTE
-    # train_questions: torch.Size([95334, vocab_size])
-    # train_answers: torch.Size([95334, vocab_size])
-    # train_labels: torch.Size([95334])
-    # train_questions, train_answers, train_labels = \
-    #     over_sample_data(train_questions, train_answers, train_labels, vocab_size)
-
-    # without SMOTE
-    train_questions = torch.tensor(train_questions, dtype=torch.long)
-    train_answers = torch.tensor(train_answers, dtype=torch.long)
-    train_labels = torch.tensor(train_labels, dtype=torch.long)
+    # 正负样本平均
+    if smote:
+        train_questions, train_answers, train_labels = \
+                over_sample_data(train_questions, train_answers, train_labels, vocab_size)
+    else:
+        train_questions = torch.tensor(train_questions, dtype=torch.long)
+        train_answers = torch.tensor(train_answers, dtype=torch.long)
+        train_labels = torch.tensor(train_labels, dtype=torch.long)
     print('train_answers', train_answers.size())
 
     # 验证集数据
@@ -564,14 +558,7 @@ if __name__ == "__main__":
             val_answers.append(item[2])
     val_questions = sentence_encode(val_questions, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
     val_answers = sentence_encode(val_answers, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
-    # val_questions: torch.Size([14022, vocab_size])
-    # val_answers: torch.Size([14022, vocab_size])
-    # val_labels: torch.Size([14022])
 
-    # with SMOTE
-    # val_questions, val_answers, val_labels = over_sample_data(val_questions, val_answers, val_labels, vocab_size)
-
-    # without SMOTE
     val_questions = torch.tensor(val_questions, dtype=torch.long)
     val_answers = torch.tensor(val_answers, dtype=torch.long)
     val_labels = torch.tensor(val_labels, dtype=torch.long)
@@ -579,25 +566,123 @@ if __name__ == "__main__":
     # TensorDataset: dataset wrapping, 方便分批从数据集中取数据
     train_dataset = TensorDataset(train_questions, train_answers, train_labels)
     val_dataset = TensorDataset(val_questions, val_answers, val_labels)
-
     # 训练
+    train_mrr, train_acc, train_true_answer_acc, val_mrr, val_acc, val_true_answer_acc = \
+        train(model, optimizer, train_dataset, val_dataset, bs, epochs, train_data, validation_data, vocab_size,
+              oov_index, word2idx)
+
+if __name__ == "__main__":
+    # # 参数定义
+    # vocab_size = 15
+    # embedding_dim = 300
+    # n_in = 40
+    # n_hidden = 256
+    # n_out = 2
+    # lr = 2e-5
+    # bs = 400
+    # epochs = 5
+    # with open('../data/models/word2idx.pickle', 'rb') as handle:
+    #     word2idx = pickle.load(handle)
+    # oov_index = len(word2idx.keys())  # 70000
+    # # word2idx需要提前保存，不然使用模型时要花很长时间加载
+    # # with open('../data/models/word2idx.pickle', 'wb') as handle:
+    # #     pickle.dump(word2idx, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #
+    # # 数据读取
+    # train_data_path = "../data/input/train_2017.json"
+    # validation_data_path = "../data/input/validation.json"
+    # with open(train_data_path, 'r', encoding="utf-8") as load_j:
+    #     train_data = json.load(load_j)
+    # with open(validation_data_path, 'r', encoding="utf-8") as load_j:
+    #     validation_data = json.load(load_j)
+    #
+    # model = CnnModel(embedding_file="../data/word2vec/word2vec-300.iter5",
+    #                  embedding_dim=embedding_dim, vocab_size=vocab_size,
+    #                  save_path="../data/models/model_CNN_train2017_epochs5.pth",
+    #                  word2idx=word2idx, n_in=n_in, n_hidden=n_hidden, n_out=n_out)
+    # optimizer = optim.Adam(model.parameters(), lr=lr)
+    # # 训练集数据
+    # train_questions = []
+    # train_answers = []
+    # train_labels = []
+    # for question in train_data.keys():
+    #     for item in train_data[question]:
+    #         train_labels.append(int(item[0]))
+    #         train_questions.append(item[1])
+    #         train_answers.append(item[2])
+    # # 查看训练集中句子的长度
+    # # question_len = map(lambda question: len(question), train_questions)
+    # # print(Counter(question_len))
+    # # answer_len = map(lambda answer: len(answer), train_answers)
+    # # print(Counter(answer_len))
+    # train_questions = sentence_encode(train_questions, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
+    # train_answers = sentence_encode(train_answers, vocab_size, oov_index, word2idx)  # (50694, vocab_size)
+    #
+    # # with SMOTE
+    # # train_questions: torch.Size([95334, vocab_size])
+    # # train_answers: torch.Size([95334, vocab_size])
+    # # train_labels: torch.Size([95334])
+    # # train_questions, train_answers, train_labels = \
+    # #     over_sample_data(train_questions, train_answers, train_labels, vocab_size)
+    #
+    # # without SMOTE
+    # train_questions = torch.tensor(train_questions, dtype=torch.long)
+    # train_answers = torch.tensor(train_answers, dtype=torch.long)
+    # train_labels = torch.tensor(train_labels, dtype=torch.long)
+    # print('train_answers', train_answers.size())
+    #
+    # # 验证集数据
+    # val_questions = []
+    # val_answers = []
+    # val_labels = []
+    # for question in validation_data.keys():
+    #     for item in validation_data[question]:
+    #         val_labels.append(int(item[0]))
+    #         val_questions.append(item[1])
+    #         val_answers.append(item[2])
+    # val_questions = sentence_encode(val_questions, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
+    # val_answers = sentence_encode(val_answers, vocab_size, oov_index, word2idx)  # (7445, vocab_size)
+    # # val_questions: torch.Size([14022, vocab_size])
+    # # val_answers: torch.Size([14022, vocab_size])
+    # # val_labels: torch.Size([14022])
+    #
+    # # with SMOTE
+    # # val_questions, val_answers, val_labels = over_sample_data(val_questions, val_answers, val_labels, vocab_size)
+    #
+    # # without SMOTE
+    # val_questions = torch.tensor(val_questions, dtype=torch.long)
+    # val_answers = torch.tensor(val_answers, dtype=torch.long)
+    # val_labels = torch.tensor(val_labels, dtype=torch.long)
+    # print('val_answers', val_answers.size())
+    # # TensorDataset: dataset wrapping, 方便分批从数据集中取数据
+    # train_dataset = TensorDataset(train_questions, train_answers, train_labels)
+    # val_dataset = TensorDataset(val_questions, val_answers, val_labels)
+    #
+    # # 训练
     # train_mrr, train_acc, train_true_answer_acc, val_mrr, val_acc, val_true_answer_acc = \
     #     train(model, optimizer, train_dataset, val_dataset, bs, epochs, train_data, validation_data, vocab_size, oov_index, word2idx)
-
-    # 读取保存的模型，测试模型能否使用
-    # train_accu, val_accu = test(train_dataset, val_dataset, bs,
-    #                             model_path="../data/models/model_CNN_epochs=1_0202.pth")
-
-    model_loader = ModelLoader('../data/models/model_CNN_focalloss_epochs=5.pth')
-    # model_loader.get_answer_from_model("大叻大学的越语是什么，在什么地方？")
-    train_mrr, train_acc, train_true_answer_acc = model_loader.evaluation(model_loader.train_data)
-    val_mrr, val_acc, val_true_answer_acc = model_loader.evaluation(model_loader.validation_data)
-    print('train mrr ', train_mrr)
-    print('train_acc ', train_acc)
-    print('train_true_answer_acc', train_true_answer_acc)
-    print('val_mrr ', val_mrr)
-    print('val_acc ', val_acc)
-    print('val_true_answer_acc ', val_true_answer_acc)
-
-    # prop: (5,2), 在0/1标签上的概率分布
-    # cate: (5,) [1,1,0,1,0] 所预测的标签
+    #
+    # # 读取保存的模型，测试模型能否使用
+    # # train_accu, val_accu = test(train_dataset, val_dataset, bs,
+    # #                             model_path="../data/models/model_CNN_epochs=1_0202.pth")
+    #
+    # # model_loader = ModelLoader('../data/models/model_CNN_focalloss_epochs=5.pth')
+    # # # model_loader.get_answer_from_model("大叻大学的越语是什么，在什么地方？")
+    # # train_mrr, train_acc, train_true_answer_acc = model_loader.evaluation(model_loader.train_data)
+    # # val_mrr, val_acc, val_true_answer_acc = model_loader.evaluation(model_loader.validation_data)
+    # # print('train mrr ', train_mrr)
+    # # print('train_acc ', train_acc)
+    # # print('train_true_answer_acc', train_true_answer_acc)
+    # # print('val_mrr ', val_mrr)
+    # # print('val_acc ', val_acc)
+    # # print('val_true_answer_acc ', val_true_answer_acc)
+    #
+    # # prop: (5,2), 在0/1标签上的概率分布
+    # # cate: (5,) [1,1,0,1,0] 所预测的标签
+    main(
+        train_path="../data/input/train_2017.json",
+        val_path="../data/input/validation.json",
+        model_save_path="../data/models/model_CNN_train2017_smote_epochs5.pth",
+        lang="zh",
+        smote=True
+    )
